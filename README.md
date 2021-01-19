@@ -8,7 +8,7 @@
 
 |  数列番号  |  該当レポジトリ  |
 | ---- | ---- |
-|  A000001ーA099999  |  [OEIS_00](https://github.com/manman4/OEIS_00） |
+|  A000001ーA099999  |  [https://github.com/manman4/OEIS_00](https://github.com/manman4/OEIS_00） |
 |  A100000ーA199999  |  [OEIS_01](https://github.com/manman4/OEIS_01） |
 |  A200000ーA299999  |  [OEIS_02](https://github.com/manman4/OEIS_02） |
 |  A300000ーA399999  |  [OEIS_03](https://github.com/manman4/OEIS_03） |
