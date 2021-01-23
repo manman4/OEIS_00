@@ -1,0 +1,1 @@
+my(N=66, x='x+O('x^N)); concat(0, Vec(sum(k=2, N, x^k/(1-x^(2*k)))))
