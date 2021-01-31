@@ -1,4 +1,4 @@
-b000000_test_gp.txt,,,,,
+b000000_gp_test.txt,,,,,
 上記とOEISと比較。,,,,,
 一致してかつ他にb-fileがある場合、他のb-fileは削除。,,,,,
 Number,to do or not to do,To,Date_01,To,Date_02
