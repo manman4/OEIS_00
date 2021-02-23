@@ -2,7 +2,7 @@ def A(n)
   a = 1r
   ary = [1]
   (2..n).each{|i|
-    a = a + 1 / a
+    a += 1 / a
     ary << a
   }
   ary
