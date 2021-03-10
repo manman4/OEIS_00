@@ -11,6 +11,7 @@ def A054631(n)
   }
   ary
 end
+
 n = 140
 ary = A054631(n)
 (1..ary.size).each{|i|
