@@ -5,7 +5,7 @@ def A(q, n)
 end
 def A090192(n)
   A(-1, n)
-end # Seiichi Manyama, Dec 24 2016
+end
 
 n = 4000
 ary = A090192(n)
