@@ -11,7 +11,7 @@ def A(n)
   while !(m + cnt).prime?
     cnt += 1
   end
-p [n, cnt, m + cnt]
+  p [n, cnt, m + cnt]
   cnt
 end
 
