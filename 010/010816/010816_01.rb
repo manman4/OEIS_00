@@ -1,6 +1,6 @@
 def A010816(n)
   ary = Array.new(n + 1, 0)
-  # ���R�r�̌����̕K�v�ȂƂ��낾�����o��
+  # ヤコビの公式の必要なところだけ取り出す
   i = 0
   j, k = 2 * i + 1, i * (i + 1) / 2
   while k <= n
