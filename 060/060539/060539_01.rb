@@ -7,7 +7,7 @@ def C(k, n)
   (1..n).map{|i| ncr(k * i, k)}
 end
 
-def A322967(n)
+def A060539(n)
   a = []
   (1..n).each{|i| a << C(i, n - i + 1)}
   ary = []
@@ -19,8 +19,8 @@ def A322967(n)
   ary
 end
 
-n = 140
-ary = A322967(n)
+n = 10
+ary = A060539(n)
 (1..ary.size).each{|i|
   j = ary[i - 1]
   break if j.to_s.size > 1000
