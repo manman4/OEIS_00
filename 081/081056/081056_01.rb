@@ -19,11 +19,8 @@ end
 
 n = 37
 ary = C(4, 2 * n + 1)
-b=[]
 (0..n).each{|i|
   print i
   print ' '
   puts ary[2 * i + 1]
-b<<ary[2*i+1]
 }
-p b
