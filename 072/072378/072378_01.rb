@@ -18,10 +18,10 @@ def f(m, n)
     ary2[i] = 1
     ary1 << ary2
   }
-  # ”z—ñ‚ğˆø”‚É“WŠJ
+  # é…åˆ—ã‚’å¼•æ•°ã«å±•é–‹
   a = Matrix[*ary1]
   mod = n
-  # power(a, n, mod) * v‚Ì¬•ª‚Ímod–¢–
+  # power(a, n, mod) * vã®æˆåˆ†ã¯modæœªæº€
   (power(a, n, mod) * v)[m - 1]
 end
 
