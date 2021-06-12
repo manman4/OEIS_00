@@ -1,6 +1,4 @@
-require 'prime'
-
-# mŸˆÈ‰º‚ğæ‚èo‚·
+# mæ¬¡ä»¥ä¸‹ã‚’å–ã‚Šå‡ºã™
 def mul(f_ary, b_ary, m)
   s1, s2 = f_ary.size, b_ary.size
   ary = Array.new(s1 + s2 - 1, 0)
@@ -14,7 +12,7 @@ def mul(f_ary, b_ary, m)
   ary
 end
 
-# mŸˆÈ‰º‚ğæ‚èo‚·
+# mæ¬¡ä»¥ä¸‹ã‚’å–ã‚Šå‡ºã™
 def power(ary, n, m)
   return [1] if n == 0
   k = power(ary, n >> 1, m)
@@ -25,7 +23,7 @@ end
 
 def A000594(n)
   ary = Array.new(n + 1, 0)
-  # ƒ„ƒRƒr‚ÌŒö®‚Ì•K—v‚È‚Æ‚±‚ë‚¾‚¯æ‚èo‚·
+  # ãƒ¤ã‚³ãƒ“ã®å…¬å¼ã®å¿…è¦ãªã¨ã“ã‚ã ã‘å–ã‚Šå‡ºã™
   i = 0
   j, k = 2 * i + 1, i * (i + 1) / 2
   while k <= n
@@ -33,7 +31,7 @@ def A000594(n)
     i += 1
     j, k = 2 * i + 1, i * (i + 1) / 2
   end
-  # 8æ‚µ‚Äx”{
+  # 8ä¹—ã—ã¦xå€
   power(ary, 8, n).unshift(0)[1..n]
 end
 
