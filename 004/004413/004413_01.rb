@@ -11,7 +11,7 @@ def A(k, n)
   ary
 end
 
-n = 18
+n = 10000
 ary = A(12, n)
 (0..n).each{|i|
   j = (-1) ** (i % 2) * ary[i]
