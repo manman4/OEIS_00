@@ -36,6 +36,10 @@ dir.each{|file_name|
     # 6桁＋α
     if executable_file_name.size == 6
       path = dir_name + "/" + executable_file_name
+      # フォルダがなければ作成
+      # (通常b_flleが作成されており、フォルダが上記プロセスでできているはずだが、
+      #  b_fileがないこともたまにあるのでこの処理を行う)
+      FileUtils.mkdir_p(path) unless FileTest.exist?(path)
 
       # executable_fileの移動
       # 同名のファイルがなければ、フォルダの中に移動
