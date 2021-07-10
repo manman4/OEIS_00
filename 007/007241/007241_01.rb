@@ -1,3 +1,5 @@
+# McKay-Thompson series of class 2A
+
 def s(k, n)
   s = 0
   (1..n).each{|i| s += i if n % i == 0 && i % k == 0}
