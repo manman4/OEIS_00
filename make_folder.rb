@@ -1,10 +1,17 @@
 require 'fileutils'
 
-# filenames = []
-dir_name = "054"
+###################################################
+#
+# 1. b_fileの名前に基づきフォルダ作成、b_file格納
+# 2. フォルダに実行ファイル（rb, py）格納
+#
+###################################################
+
+
+dir_name = "007"
 dir = Dir.open(dir_name)
+
 dir.each{|file_name|
-  # filenames << file_name
   if file_name[-4..-1] == ".txt" && file_name[0] == "b"
     b_file_name = file_name[1..-5]
     # 6桁＋α
@@ -22,4 +29,19 @@ dir.each{|file_name|
     end
   end
 }
-# p filenames
+
+dir.each{|file_name|
+  if file_name[-3..-1] == ".rb" || file_name[-3..-1] == ".py"
+    executable_file_name = file_name[0..-4]
+    # 6桁＋α
+    if executable_file_name.size == 6
+      path = dir_name + "/" + executable_file_name
+
+      # executable_fileの移動
+      # 同名のファイルがなければ、フォルダの中に移動
+      if !(File.exists?(path + "/" + file_name))
+        FileUtils.mv(dir_name + "/" + file_name, path + "/" + file_name)
+      end
+    end
+  end
+}
