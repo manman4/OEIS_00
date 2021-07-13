@@ -6,8 +6,8 @@ end
 
 def A(ary, n)
   a_ary = [1]
-  a = [0] + (1..n).map{|i| ary.inject(0){|s, j| s += j[1] * s(j[0], i)}}
-  (1..n).each{|i| a_ary << (1..i).inject(0){|s, j| s -= a[j] * a_ary[-j]} / i}
+  a = [0] + (1..n).map{|i| ary.inject(0){|s, j| s + j[1] * s(j[0], i)}}
+  (1..n).each{|i| a_ary << (1..i).inject(0){|s, j| s - a[j] * a_ary[-j]} / i}
   a_ary
 end
 
@@ -24,11 +24,11 @@ end
 def sqrt_a(ary)
   n = ary.size - 1
   a = [1]
-  (0..n - 1).each{|i| a << (ary[i + 1] - (1..i).inject(0){|s, j| s += a[j] * a[-j]}) / 2r}
+  (0..n - 1).each{|i| a << (ary[i + 1] - (1..i).inject(0){|s, j| s + a[j] * a[-j]}) / 2r}
   (0..n).map{|i| (f(i) * a[i]).to_i}
 end
 
-n = 20
+n = 17
 ary = sqrt_a(B(-3, n))
 (0..n).each{|i|
   j = ary[i]
