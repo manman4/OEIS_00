@@ -1,5 +1,3 @@
-require 'prime'
-
 def pow(a, m, mod)
   return 1 if m == 0
   k = pow(a, m >> 1, mod)
