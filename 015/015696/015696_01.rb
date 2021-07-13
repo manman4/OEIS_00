@@ -37,3 +37,4 @@ ary = sqrt_a(B(-23, n))
   print ' '
   puts j
 }
+
