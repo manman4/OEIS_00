@@ -14,7 +14,7 @@ require 'fileutils'
 ##################################################################
 
 
-dir_name = "030"
+dir_name = "028"
 dir = Dir.open(dir_name)
 
 dir.each{|file_name|
