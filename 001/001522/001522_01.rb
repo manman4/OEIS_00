@@ -8,9 +8,9 @@ def A001522(n)
     b = Marshal.load(Marshal.dump(a))
     (1..m).each{|i| (0..n - x).each{|j| b[i][j + x] += a[i - 1][j]}}
     a = b
-    # 1, 1, c , 1‚Ì^‚Á•½‚ç‚È‚à‚Ì
+    # 1, 1, â€¦ , 1ã®çœŸã£å¹³ã‚‰ãªã‚‚ã®
     s = 1
-    # RŒ^
+    # å±±å‹
     (1..x - 1).each{|i|
       # k + 1 <= m
       (1..m - 1).each{|k|
