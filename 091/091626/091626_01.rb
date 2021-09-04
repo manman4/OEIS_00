@@ -1,3 +1,5 @@
+# Number of ordered integer pairs (i,j) with 0 <= i <= j <= n such that i+j <= n and i*j <= n.
+
 def A(n)
   cnt = 0
   (0..n).each{|i|
