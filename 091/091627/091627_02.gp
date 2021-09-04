@@ -1,0 +1,1 @@
+N=66; x='x+O('x^N); concat([0, 0], Vec((-x+sum(k=1, sqrtint(N), x^k^2/(1-x^k)))/(1-x)))
