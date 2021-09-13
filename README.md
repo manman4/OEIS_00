@@ -21,4 +21,13 @@ b-fileをアップロードさせないため、テキストファイルもア�
 
 1000digitsまでだが、符号も含めることにする
 
+```PARI:
+\\ A336975
+v(n)={x='x+O('x^(n+10)); 1/prod(k=1, n, 1-x^k*(k+x))};
+M=1000;
+v=v(M);
+for(n=0, M, i=polcoef(v, n); if((i<0)+#digits(i)>1000, break); write("/Users/xxx/Desktop/b336975_gp_test.txt", n, " ", i))
+```
+
 念のため、計算は多めにしておく　例）10100まで計算し 10000まで表示
+
