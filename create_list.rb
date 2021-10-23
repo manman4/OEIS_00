@@ -8,12 +8,15 @@ File.open("squence_list.rb", mode = "w"){|f|
   f.write("#{Time.now.strftime("%Y-%m-%d %H:%M:%S")} 現在\n")
   Find.find(path){|item|
     # ./git とか省く
-    if  /[0-9]{3}/.match?(File.dirname(item)[2..4])
+    if /[0-9]{3}/.match?(File.dirname(item)[2..4])
       # ディレクトリのみ対象
       if File.ftype(item) == "directory"
-        cnt += 1
         base = File.basename(item)
-        f.write("#{cnt} #{base}\n")
+        # .vscodeとか除くため
+        if /[0-9]{6}/.match?(base)
+          cnt += 1
+          f.write("#{cnt} #{base}\n")
+        end
       end
     end
   }
