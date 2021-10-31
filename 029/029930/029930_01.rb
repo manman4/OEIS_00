@@ -1,4 +1,4 @@
-# mŸˆÈ‰º‚ğæ‚èo‚·
+# mï¿½ï¿½ï¿½È‰ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½oï¿½ï¿½
 def mul(f_ary, b_ary, m)
   s1, s2 = f_ary.size, b_ary.size
   ary = Array.new(s1 + s2 - 1, 0)
@@ -22,7 +22,7 @@ def A(k, n)
   ary
 end
 
-n = 1000
+n = 2 ** 13 - 1
 ary0 = A(2, 2 * n)
 ary = (0..n).map{|i| ary0[2 * i]}
 (0..n).each{|i|
