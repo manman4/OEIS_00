@@ -1,0 +1,1 @@
+my(N=66, x='x+O('x^N)); concat(0, Vec(sum(k=1, N, x^k*prod(j=1, k, (1-x^(k+j-2))/(1-x^j)))))
