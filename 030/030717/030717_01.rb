@@ -10,7 +10,7 @@ end
 n = 100
 # sortがないとa(100)くらいで微妙に異なる値のものがでてくる
 ary = A(1, n)
-(1..1000).each{|i|
+(1..10000).each{|i|
   print i
   print ' '
   puts ary[i - 1]
