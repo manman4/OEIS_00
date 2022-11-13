@@ -2,12 +2,11 @@ def A030717(n)
   ary = [1]
   (1..n).each{|i|
     ary += ary.uniq.sort.map{|i| ary.count(i)}
-    ary.flatten!
   }
   ary
 end
 
-n = 510
+n = 110
 ary = A030717(n)
 max = 0
 cnt = 0
@@ -19,6 +18,6 @@ cnt = 0
     print cnt
     print ' '
     puts j
-    break if cnt == 500
+    break if cnt == 100
   end
 }
