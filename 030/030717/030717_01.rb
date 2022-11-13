@@ -2,7 +2,6 @@ def A(k, n)
   ary = [k]
   (1..n).each{|i|
     ary += ary.uniq.sort.map{|i| ary.count(i)}
-    ary.flatten!
   }
   ary
 end
