@@ -1,7 +1,7 @@
 def A(n)
   a = []
   ary = [1]
-  (1..n).each{|i|
+  n.times{
     j = ary.uniq.sort
     a += j
     ary += j.map{|i| ary.count(i)}
