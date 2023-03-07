@@ -1,4 +1,4 @@
-# mŸˆÈ‰º‚ğæ‚èo‚·
+# mï¿½ï¿½ï¿½È‰ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½oï¿½ï¿½
 def mul(f_ary, b_ary, m)
   s1, s2 = f_ary.size, b_ary.size
   ary = Array.new(s1 + s2 - 1, 0)
@@ -51,3 +51,4 @@ ary = A(2, n)
   print ' '
   puts j
 }
+
