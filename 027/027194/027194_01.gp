@@ -1,0 +1,1 @@
+my(N=70, x='x+O('x^N)); Vec(x^4 * sum(k=0, N, x^(4*k)/prod(j=1, 2*k+1, 1-x^j)))
