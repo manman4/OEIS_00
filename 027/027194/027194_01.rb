@@ -4,7 +4,7 @@ def partition(n, min, max)
   [max, n].min.downto(min).flat_map{|i| partition(n - i, min, i).map{|rest| [i, *rest]}}
 end
 
-def A(k, n)
+def A(n, k)
   cnt = 0
   partition(n, k, n).each{|i|
     cnt += 1 if i.size % 2 == 1
@@ -15,7 +15,7 @@ end
 n = 30
 b = []
 (1..n).each{|i|
-  j = A(2, i - 2)
+  j = A(i - 2, 2)
   break if j.to_s.size > 1000
   print i
   print ' '
