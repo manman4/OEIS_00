@@ -30,3 +30,7 @@ for(n=0, M, i=polcoef(v, n); if((i<0)+#digits(i)>1000, break); write("/Users/xxx
 ```
 
 念のため、計算は多めにしておく　例）10100まで計算し 10000まで表示
+
+## .gpファイル
+
+このリポジトリでは、PARI/GPスクリプトとして保存
