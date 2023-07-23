@@ -10,7 +10,7 @@ def A(n)
       end
     }
   }
-  # 1以上
+  # 1より大きいものだけを数える
   h.to_a.select{|i| i[1] > 1}.size
 end
 
