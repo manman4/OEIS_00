@@ -11,7 +11,7 @@ def A(f_ary, g_ary, n)
   ary
 end
 
-n = 18
+n = 5000
 ary0 = (0..n).map{|i| 24}
 ary1 = [0] + (1..n).map{|i| i}
 ary = A(ary0, ary1, n)
