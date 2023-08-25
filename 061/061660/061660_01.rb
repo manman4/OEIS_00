@@ -6,7 +6,7 @@ def isok(n, k)
 end
 
 cnt = 1
-(2..4729220).each{|i|
+(2..6909475).each{|i|
   if isok(i, 6)
     print cnt
     print ' '
