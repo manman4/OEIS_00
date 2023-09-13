@@ -5,7 +5,7 @@ end
 
 def B(k, m, n)
   ary = []
-  s = 1
+  s = 0
   while ary.size < n
     ary << s if A(k, m, s)
     s += 1
