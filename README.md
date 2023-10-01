@@ -34,3 +34,4 @@ for(n=0, M, i=polcoef(v, n); if((i<0)+#digits(i)>1000, break); write("/Users/xxx
 ## .gpファイル
 
 このリポジトリでは、PARI/GPスクリプトとして保存
+
