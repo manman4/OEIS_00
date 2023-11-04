@@ -1,3 +1,5 @@
 *.txt
 *.pdf
 *.sage.py
+._*
+
