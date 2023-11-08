@@ -1,0 +1,22 @@
+ring r=(0),(a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1),lp;
+list v=1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13;
+poly s=v[2]^2-4*v[3];
+poly t0;
+poly u0;
+int n,j,k,w;
+for(n=3;n<14;n++){
+  t0=v[n]^2*s;
+  s=t0;
+  for(k=1;k<n;k++){
+    u0=(-n)*diff(t0,v[2]);
+    for(j=2;j<n;j++){
+      u0=u0+((j-(n+1))*v[j])*diff(t0,v[j+1]);
+    }
+    t0=u0/(k*v[n]);
+    s=s+t0*v[n+1]^k;
+  }
+  print(size(s));
+}
+
+quit;
+
