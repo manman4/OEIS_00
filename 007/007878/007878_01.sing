@@ -4,12 +4,12 @@ poly s=v[2]^2-4*v[3];
 poly t0;
 poly u0;
 int n,j,k,w;
-for(n=3;n<15;n++){
+for(n=3; n<15; n++){
   t0=v[n]^2*s;
   s=t0;
-  for(k=1;k<n;k++){
+  for(k=1; k<n; k++){
     u0=(-n)*diff(t0,v[2]);
-    for(j=2;j<n;j++){
+    for(j=2; j<n; j++){
       u0=u0+((j-(n+1))*v[j])*diff(t0,v[j+1]);
     }
     t0=u0/(k*v[n]);
