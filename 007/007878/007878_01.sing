@@ -1,11 +1,11 @@
 ring r=(0),(a14,a13,a12,a11,a10,a9,a8,a7,a6,a5,a4,a3,a2,a1),lp;
 list v=1,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14;
-poly s=v[2]^2-4*v[3];
+poly s=v[2]^2-4*v[3]; // 2次の場合
 poly t0;
 poly u0;
 int n,j,k,w;
 for(n=3; n<15; n++){
-  t0=v[n]^2*s;
+  t0=v[n]^2*s; // D0=a{n-1}^2*disc.(f{n-1}(x))
   s=t0;
   for(k=1; k<n; k++){
     u0=(-n)*diff(t0,v[2]);
@@ -13,7 +13,7 @@ for(n=3; n<15; n++){
       u0=u0+((j-(n+1))*v[j])*diff(t0,v[j+1]);
     }
     t0=u0/(k*v[n]);
-    s=s+t0*v[n+1]^k;
+    s=s+t0*v[n+1]^k; // D=D0+D1*an+D2*an^2+...+D{n-1}*an^(n-1)
   }
   print(size(s));
 }
