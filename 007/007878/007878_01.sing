@@ -4,15 +4,15 @@ poly s=v[2]^2-4*v[3]; // 2次の場合
 poly t0;
 poly u0;
 int n,j,k,w;
-for(n=3; n<15; n++){
+for(n=3; n<4; n++){
   t0=v[n]^2*s; // D0=a{n-1}^2*disc.(f{n-1}(x))
   s=t0;
   for(k=1; k<n; k++){
-    u0=(-n)*diff(t0,v[2]);
+    u0=n*diff(t0,v[2]);
     for(j=2; j<n; j++){
-      u0=u0+((j-(n+1))*v[j])*diff(t0,v[j+1]);
+      u0=u0+(n+1-j)*v[j]*diff(t0,v[j+1]);
     }
-    t0=u0/(k*v[n]);
+    t0=-u0/(k*v[n]);
     s=s+t0*v[n+1]^k; // D=D0+D1*an+D2*an^2+...+D{n-1}*an^(n-1)
   }
   print(size(s));
