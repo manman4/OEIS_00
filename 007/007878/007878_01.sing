@@ -4,7 +4,7 @@ poly s=v[2]^2-4*v[3]; // 2次の場合
 poly t0;
 poly u0;
 int n,j,k,w;
-for(n=3; n<4; n++){
+for(n=3; n<15; n++){
   t0=v[n]^2*s; // D0=a{n-1}^2*disc.(f{n-1}(x))
   s=t0;
   for(k=1; k<n; k++){
