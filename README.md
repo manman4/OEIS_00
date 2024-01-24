@@ -41,3 +41,6 @@ for(n=0, M, i=polcoef(v, n); if((i<0)+#digits(i)>1000, break); write("/Users/xxx
 
 https://github.com/oeis/oeisdata/
 
+テーマ別に自身が作ったリポジトリはこちら
+
+https://github.com/manman4/study_OEIS
