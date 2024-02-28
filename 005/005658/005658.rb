@@ -9,7 +9,7 @@ def A(n)
     a.sort!.uniq!
     i += 1
   end
-  a.sort[0..n - 1]
+  a[0..n - 1]
 end
 
 n = 15889
