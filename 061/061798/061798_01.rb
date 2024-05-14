@@ -10,13 +10,19 @@ def A(n)
       end
     }
   }
-  # 1より大きいものだけを数える
   h.to_a.select{|i| i[1] > 1}.size
 end
 
-n = 1000
+def A061798(n)
+  (1..n).map{|i| A(i)}
+end
+
+p A061798(80)
+
+n = 436
+ary = A061798(n)
 (1..n).each{|i|
-  j = A(i)
+  j = ary[i - 1]
   break if j.to_s.size > 1000
   print i
   print ' '
