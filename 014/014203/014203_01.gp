@@ -1,0 +1,1 @@
+my(N=50, x='x+O('x^N)); concat(0, Vec(x/(1-x)*deriv( ( 1 + 2 * sum(k=1, N, x^k^2) )^3 )))
