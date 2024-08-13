@@ -1,3 +1,6 @@
 my(N=100, x='x+O('x^N)); Vec(serlaplace(cos(x)))  
 
 my(N=100, x='x+O('x^N)); serlaplace(cos(x))
+
+
+my(N=100, x='x+O('x^N)); Vec(1/(1 + x^2))  
