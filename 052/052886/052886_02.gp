@@ -1,0 +1,1 @@
+my(N=20, x='x+O('x^N)); concat(0, Vec(serlaplace(serreverse( log(1 + x * (1 - x)) ))))
