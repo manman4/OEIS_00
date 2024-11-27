@@ -1,14 +1,17 @@
 # OEIS_00
 
-## 概要
+- [日本語](README_ja.md)
+- [English](README.md)
 
-私（[manman4](https://github.com/manman4)）は2016年からOEISの編集を始めました。
+## Overview
 
-編集の際に使用したコードが溜まってきたので、随時公開していきます。
+I ([manman4](https://github.com/manman4)) started editing OEIS in 2016.
 
-文字化けしているところがあるかもしれませんがご了承ください。
+As I have accumulated various pieces of code during the editing process, I plan to release them gradually.
 
-|  数列番号  |  該当レポジトリ  |
+Please note that there may be some garbled text.
+
+|  Sequence Number  |  Relevant Repository  |
 | ---- | ---- |
 |  A000001-A099999  |  [OEIS_00](https://github.com/manman4/OEIS_00)  |
 |  A100000-A199999  |  [OEIS_01](https://github.com/manman4/OEIS_01)  |
@@ -17,9 +20,9 @@
 
 ## b-file
 
-b-fileをアップロードさせない（サイズが大きいので別リポジトリで管理）ため、テキストファイルもアップロードしない
+To avoid uploading b-files (due to their large size, which will be managed in a separate repository), text files will also not be uploaded.
 
-1000digitsまでだが、符号も含めることにする
+The files are limited to 1000 digits, including the sign.
 
 ```PARI:
 \\ A336975
@@ -29,18 +32,19 @@ v=v(M);
 for(n=0, M, i=polcoef(v, n); if((i<0)+#digits(i)>1000, break); write("/Users/xxx/Desktop/b336975_gp_test.txt", n, " ", i))
 ```
 
-念のため、計算は多めにしておく　例）10100まで計算し 10000まで表示
+As a precaution, the calculations are carried out for a higher range than needed.
+For example, calculate up to 10100 but display only up to 10000.
 
 ## .gpファイル
 
-このリポジトリでは、PARI/GPスクリプトとして保存
+In this repository, the scripts are saved as PARI/GP files.
 
 ## 参考
 
-本家OEISのデータに関するリポジトリはこちら
+The official repository for OEIS data can be found here:
 
 https://github.com/oeis/oeisdata/
 
-テーマ別に自身が作ったリポジトリはこちら
+Repositories organized by theme, created by me, can be found here:
 
 https://github.com/manman4/study_OEIS
