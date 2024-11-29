@@ -35,11 +35,11 @@ for(n=0, M, i=polcoef(v, n); if((i<0)+#digits(i)>1000, break); write("/Users/xxx
 As a precaution, the calculations are carried out for a higher range than needed.
 For example, calculate up to 10100 but display only up to 10000.
 
-## .gpファイル
+## .gp files
 
 In this repository, the scripts are saved as PARI/GP files.
 
-## 参考
+## Reference Materials
 
 The official repository for OEIS data can be found here:
 
