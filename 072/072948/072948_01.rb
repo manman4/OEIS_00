@@ -1,6 +1,5 @@
 def A(n, k)
-  k = n
-  dp = Array.new(n+1){Array.new(n+1){Array.new(k+1,0)}}
+  dp = Array.new(n+1){Array.new(n+1){Array.new(k+1, 0)}}
   dp[0][0][0] = 1
   n.times{|i|
     (i+1).times{|j|
@@ -20,5 +19,5 @@ n = 300
 (0..n).each{|i|
   print i
   print ' '
-  puts A(2 * i, i)
+  puts A(2 * i, 2 * i)
 }
