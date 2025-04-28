@@ -1,25 +1,25 @@
 # T(n,k) is the number of lattice paths from (0,0) to (k,n-k) using steps (1,0),(2,0),(0,1),(0,2),(1,1).
 def A(n, k)
-  # 配列を初期化 (n+1)*(k+1) サイズ
-  dp = Array.new(n + 1){ Array.new(k + 1, 0)}
+  # 配列を初期化 (k+1)*(n+1) サイズ
+  dp = Array.new(k + 1){Array.new(n + 1, 0)}
   dp[0][0] = 1
 
-  (0..n).each{|y|
-    (0..k).each{|x|
+  (0..k).each{|y|
+    (0..n).each{|x|
       next if dp[y][x] == 0
       # (1,0) のステップ
-      dp[y][x + 1] += dp[y][x] if x + 1 <= k
+      dp[y][x + 1] += dp[y][x] if x + 1 <= n
       # (2,0) のステップ
-      dp[y][x + 2] += dp[y][x] if x + 2 <= k
+      dp[y][x + 2] += dp[y][x] if x + 2 <= n
       # (0,1) のステップ
-      dp[y + 1][x] += dp[y][x] if y + 1 <= n
+      dp[y + 1][x] += dp[y][x] if y + 1 <= k
       # (0,2) のステップ
-      dp[y + 2][x] += dp[y][x] if y + 2 <= n
+      dp[y + 2][x] += dp[y][x] if y + 2 <= k
       # (1,1) のステップ
-      dp[y + 1][x + 1] += dp[y][x] if y + 1 <= n && x + 1 <= k
+      dp[y + 1][x + 1] += dp[y][x] if y + 1 <= k && x + 1 <= n
     }
   }
-  dp[n][k]
+  dp[k][n]
 end
 
 def T(n, k)
