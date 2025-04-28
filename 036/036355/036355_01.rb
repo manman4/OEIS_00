@@ -1,4 +1,4 @@
-# T(n,k) is the number of lattice paths from (0,0) to (k,n-k) using steps (1,0),(2,0),(0,1),(0,2),(1,1).
+# T(n,k) is the number of lattice paths from (0,0) to (k,n-k) using steps (1,0),(2,0),(0,1),(0,2).
 # Cf. A091533
 def A(n, k)
   # 配列を初期化 (k+1)*(n+1) サイズ
