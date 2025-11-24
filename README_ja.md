@@ -18,6 +18,7 @@
 | A100000–A199999 | [OEIS_01](https://github.com/manman4/OEIS_01) |
 | A200000–A299999 | [OEIS_02](https://github.com/manman4/OEIS_02) |
 | A300000–A399999 | [OEIS_03](https://github.com/manman4/OEIS_03) |
+| A400000–A499999 | [OEIS_04](https://github.com/manman4/OEIS_04) |
 
 ---
 
