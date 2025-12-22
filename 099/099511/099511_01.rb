@@ -4,8 +4,9 @@ def ncr(n, r)
 end
 
 # a(n) = Sum_{k=0..n} binomial(2*k+1,2*n-2*k+1).
+# a(n) = Sum_{k=0..floor(n/2)} binomial(2*n-2*k+1,2*k+1).
 def a(n)
-  (0..n).inject(0){|s, k| s + ncr(2 * k + 1, 2 * n - 2 * k + 1)}
+  (0..n / 2).inject(0){|s, k| s + ncr(2 * n - 2 * k + 1, 2 * k + 1)}
 end
 
 n = 1000
