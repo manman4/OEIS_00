@@ -61,6 +61,31 @@ In this repository, the scripts are saved as PARI/GP files.
 * My personal thematic repositories related to OEIS studies can be found here:
   [https://github.com/manman4/study_OEIS](https://github.com/manman4/study_OEIS)
 
+  > **Note:** The following is specific to **Apple Silicon Mac + Homebrew** environments.
+
+  When compiling C / C++ programs that use OpenMP (such as A299706),
+  Apple Clang requires a lengthy set of flags.
+  The aliases available in [study_OEIS/src](https://github.com/manman4/study_OEIS/blob/main/src)
+  shorten the commands significantly. Add them to `~/.zshrc` and run `source ~/.zshrc`:
+
+  ```sh
+  # For C
+  alias gcc-omp='clang -O3 -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib -I/opt/homebrew/opt/libomp/include'
+
+  # For C++
+  alias g++-omp='clang++ -O3 -Xpreprocessor -fopenmp -std=c++17 -I/opt/homebrew/opt/libomp/include -L/opt/homebrew/opt/libomp/lib -lomp'
+  ```
+
+  Once set up, you can compile with short commands like:
+
+  ```sh
+  # C
+  gcc-omp a299706.c -o a299706
+
+  # C++
+  g++-omp a299706.cpp -o a299706
+  ```
+
 ---
 
 

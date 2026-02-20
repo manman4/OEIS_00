@@ -56,6 +56,32 @@ for(n=0, M, i=polcoef(v, n); if((i<0)+#digits(i)>1000, break); write("/Users/xxx
 * **私がテーマ別に作成したOEIS関連リポジトリ群**
   [https://github.com/manman4/study_OEIS](https://github.com/manman4/study_OEIS)
 
+  ※以下は **Apple Silicon Mac + Homebrew** 環境での例です。
+
+  A299706 のように OpenMP を使う C / C++ プログラムをコンパイルする際、
+  Apple Clang（Mac）では長いオプションが必要です。
+  [study_OEIS/src](https://github.com/manman4/study_OEIS/blob/main/src) にある
+  以下のエイリアスを `~/.zshrc` に追記して `source ~/.zshrc` を実行しておくと、
+  コマンドが短くなり便利です。
+
+  ```sh
+  # C用
+  alias gcc-omp='clang -O3 -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib -I/opt/homebrew/opt/libomp/include'
+
+  # C++用
+  alias g++-omp='clang++ -O3 -Xpreprocessor -fopenmp -std=c++17 -I/opt/homebrew/opt/libomp/include -L/opt/homebrew/opt/libomp/lib -lomp'
+  ```
+
+  設定後は以下のように短いコマンドでコンパイルできます。
+
+  ```sh
+  # C の場合
+  gcc-omp a299706.c -o a299706
+
+  # C++ の場合
+  g++-omp a299706.cpp -o a299706
+  ```
+
 ---
 
 
