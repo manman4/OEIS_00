@@ -3,10 +3,10 @@ def ncr(n, r)
   (n - r + 1..n).inject(:*) / (1..r).inject(:*)
 end
 
-# a(0) = 1; a(n) = (1/n) * Sum_{k=1..n} n^k * binomial(n,k) * a(n-k).
+# a(0) = 1; a(n) = Sum_{k=1..n} n^(k-1) * binomial(n,k) * a(n-k).
 def a(n)
   ary = [1]
-  (1..n).each{|i| ary << (1..i).inject(0){|sum, k| sum + i**k * ncr(i, k) * ary[-k]} / i}
+  (1..n).each{|i| ary << (1..i).inject(0){|sum, k| sum + i**(k-1) * ncr(i, k) * ary[-k]}}
   ary
 end
 
