@@ -6,7 +6,7 @@ default(seriesprecision, 96);
 nthderiv(f, n) =
 {
   my(g = f);
-  for (i = 1, n, g = deriv(g));
+  for(i = 1, n, g = deriv(g));
   g
 };
 
@@ -21,7 +21,7 @@ p(n) =
   dn = nthderiv(F, n);
   sgn = (-1)^(1 + n \ 2);
 
-  if (n % 2 == 0,
+  if(n % 2 == 0,
     base = dn / F,
     base = dn / deriv(F)
   );
@@ -30,4 +30,4 @@ p(n) =
   sgn * polcoeff(expr, 0)
 };
 
-for(n=1, 28, print1(p(n),", "));
+for(n=1, 23, print1(p(n),", "));
