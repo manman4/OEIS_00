@@ -1,4 +1,5 @@
-T(n, k) = binomial(n-1, n\2-k)-binomial(n-1, n\2-k-2);
+C(n, k) = if(k>=0, binomial(n, k));
+T(n, k) = C(n-1, n\2-k)-C(n-1, n\2-k-2);
 for(n=0, 14, for(k=0, n\2, print1(T(n, k), ", "))); 
 
 \\ 同じ結果
