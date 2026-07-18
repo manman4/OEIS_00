@@ -1,9 +1,9 @@
-\\ G.f. A(x) satisfies (1-3*x)*A(x) + A(x^2) = x.
+\\ G.f. A(x) satisfies (1-4*x)*A(x) + A(x^2) = x.
 A(N) =
 {
   my(x = 'x, A = 0 + O(x^(N + 1)), q = 1);
   while(q <= N,
-    A = (x - subst(A, x, x^2))/(1 - 3*x) + O(x^(N + 1));
+    A = (x - subst(A, x, x^2))/(1 - 4*x) + O(x^(N + 1));
     q *= 2
   );
   A
