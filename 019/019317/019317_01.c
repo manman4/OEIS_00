@@ -17,6 +17,7 @@
  * Board bitsets and square-index tables are allocated dynamically.
  */
 #define SYMMETRIES 8
+#define ORBIT_SIZE_KINDS 4
 #define KNOWN_FREE_MAX_N 30
 #define KNOWN_A019317_MAX_N 16
 
@@ -54,6 +55,7 @@ typedef struct {
     bool overflow;
     uint64_t solutions;
     uint64_t all_solutions;
+    uint64_t orbit_counts[ORBIT_SIZE_KINDS];
     uint64_t nodes;
 } Search;
 
@@ -63,6 +65,7 @@ typedef struct {
     bool overflow;
     uint64_t solutions;
     uint64_t all_solutions;
+    uint64_t orbit_counts[ORBIT_SIZE_KINDS];
     uint64_t nodes;
 } BranchResult;
 
@@ -71,8 +74,11 @@ typedef struct {
     int free_squares;
     uint64_t solutions;
     uint64_t all_solutions;
+    uint64_t orbit_counts[ORBIT_SIZE_KINDS];
     uint64_t nodes;
 } Result;
+
+static const int orbit_sizes[ORBIT_SIZE_KINDS] = {1, 2, 4, 8};
 
 static bool checked_mul_size(size_t a, size_t b, size_t *result) {
     if (a != 0 && b > SIZE_MAX / a) return false;
@@ -83,6 +89,12 @@ static bool checked_mul_size(size_t a, size_t b, size_t *result) {
 static bool checked_add_u64(uint64_t *value, uint64_t amount) {
     if (amount > UINT64_MAX - *value) return false;
     *value += amount;
+    return true;
+}
+
+static bool checked_mul_u64(uint64_t a, uint64_t b, uint64_t *result) {
+    if (a != 0 && b > UINT64_MAX / a) return false;
+    *result = a * b;
     return true;
 }
 
@@ -268,6 +280,13 @@ static int canonical_orbit_size(const Search *search) {
     return SYMMETRIES / stabilizer_size;
 }
 
+static int orbit_size_index(int orbit_size) {
+    for (int i = 0; i < ORBIT_SIZE_KINDS; ++i) {
+        if (orbit_sizes[i] == orbit_size) return i;
+    }
+    return -1;
+}
+
 /* Counts new attack bits, stopping as soon as the budget is exceeded. */
 static int added_attacks(const Problem *problem, const uint64_t *attacked,
                          int square, int budget, uint64_t *next) {
@@ -288,14 +307,21 @@ static void record_leaf(Search *search, int attacked_count) {
         search->found = false;
         search->solutions = 0;
         search->all_solutions = 0;
+        memset(search->orbit_counts, 0, sizeof(search->orbit_counts));
     }
     if (attacked_count != search->best_attacked) return;
 
     const int orbit_size = canonical_orbit_size(search);
     if (orbit_size != 0) {
+        const int orbit_index = orbit_size_index(orbit_size);
+        if (orbit_index < 0) {
+            search->overflow = true;
+            return;
+        }
         search->found = true;
         if (!checked_add_u64(&search->solutions, 1) ||
-            !checked_add_u64(&search->all_solutions, (uint64_t)orbit_size)) {
+            !checked_add_u64(&search->all_solutions, (uint64_t)orbit_size) ||
+            !checked_add_u64(&search->orbit_counts[orbit_index], 1)) {
             search->overflow = true;
         }
     }
@@ -430,6 +456,8 @@ static Result solve(int n) {
         branch->overflow = search.overflow;
         branch->solutions = search.solutions;
         branch->all_solutions = search.all_solutions;
+        memcpy(branch->orbit_counts, search.orbit_counts,
+               sizeof(branch->orbit_counts));
         branch->nodes = search.nodes;
         free(search.chosen);
         free(search.image);
@@ -458,8 +486,11 @@ static Result solve(int n) {
         }
     }
 
-    Result result = {n, best_attacked == INT_MAX ? -1 : problem.size - best_attacked,
-                     0, 0, 1};
+    Result result = {
+        .n = n,
+        .free_squares = best_attacked == INT_MAX ? -1 : problem.size - best_attacked,
+        .nodes = 1
+    };
     for (int first = 0; first <= last_first; ++first) {
         if (!checked_add_u64(&result.nodes, branches[first].nodes)) {
             free(branches);
@@ -477,7 +508,38 @@ static Result solve(int n) {
                 fprintf(stderr, "64-bit solution counter overflow\n");
                 exit(3);
             }
+            for (int i = 0; i < ORBIT_SIZE_KINDS; ++i) {
+                if (!checked_add_u64(&result.orbit_counts[i],
+                                     branches[first].orbit_counts[i])) {
+                    free(branches);
+                    problem_destroy(&problem);
+                    fprintf(stderr, "64-bit orbit counter overflow\n");
+                    exit(3);
+                }
+            }
         }
+    }
+
+    uint64_t orbit_total = 0;
+    uint64_t orbit_weighted_total = 0;
+    for (int i = 0; i < ORBIT_SIZE_KINDS; ++i) {
+        uint64_t weighted;
+        if (!checked_add_u64(&orbit_total, result.orbit_counts[i]) ||
+            !checked_mul_u64(result.orbit_counts[i], (uint64_t)orbit_sizes[i],
+                             &weighted) ||
+            !checked_add_u64(&orbit_weighted_total, weighted)) {
+            free(branches);
+            problem_destroy(&problem);
+            fprintf(stderr, "64-bit orbit verification overflow\n");
+            exit(3);
+        }
+    }
+    if (orbit_total != result.solutions ||
+        orbit_weighted_total != result.all_solutions) {
+        free(branches);
+        problem_destroy(&problem);
+        fprintf(stderr, "internal orbit-count verification failed\n");
+        exit(4);
     }
 
     free(branches);
@@ -533,8 +595,12 @@ int main(int argc, char **argv) {
             status = free_matches ? " A001366_OK" : " A001366_MISMATCH";
         }
         printf("n=%d A001366(n)=%d A019317(n)=%" PRIu64
+               " orbits={1:%" PRIu64 ",2:%" PRIu64
+               ",4:%" PRIu64 ",8:%" PRIu64 "}"
                " all=%" PRIu64 " nodes=%" PRIu64 "%s\n",
                n, result.free_squares, result.solutions,
+               result.orbit_counts[0], result.orbit_counts[1],
+               result.orbit_counts[2], result.orbit_counts[3],
                result.all_solutions, result.nodes, status);
     }
     return all_verified ? EXIT_SUCCESS : 2;

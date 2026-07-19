@@ -24,7 +24,12 @@ KNOWN_A019317 = {
 }.freeze
 
 class NonDominatingQueens
-  Result = Struct.new(:n, :free, :solutions, :all_solutions, :nodes, keyword_init: true)
+  ORBIT_SIZES = [1, 2, 4, 8].freeze
+  ORBIT_INDEX = ORBIT_SIZES.each_with_index.to_h.freeze
+  Result = Struct.new(
+    :n, :free, :solutions, :all_solutions, :orbit_counts, :nodes,
+    keyword_init: true
+  )
   POPCOUNT_16 = Array.new(1 << 16, 0).tap do |table|
     1.upto(table.length - 1) { |x| table[x] = table[x >> 1] + (x & 1) }
   end.freeze
@@ -45,16 +50,19 @@ class NonDominatingQueens
     @nodes = 0
     @solutions = 0
     @all_solutions = 0
+    @orbit_counts = Array.new(ORBIT_SIZES.length, 0)
     @best_attacked = known_free.nil? ? @size : @size - known_free
   end
 
   def solve
     search(0, 0, 0, 0)
+    verify_orbit_counts!
     Result.new(
       n: @n,
       free: @size - @best_attacked,
       solutions: @solutions,
       all_solutions: @all_solutions,
+      orbit_counts: @orbit_counts.dup.freeze,
       nodes: @nodes
     )
   end
@@ -118,6 +126,7 @@ class NonDominatingQueens
         @best_attacked = attacked_count
         @solutions = 0
         @all_solutions = 0
+        @orbit_counts.fill(0)
       end
       return unless attacked_count == @best_attacked
 
@@ -125,6 +134,7 @@ class NonDominatingQueens
       if orbit_size
         @solutions += 1
         @all_solutions += orbit_size
+        @orbit_counts[ORBIT_INDEX.fetch(orbit_size)] += 1
       end
       return
     end
@@ -185,6 +195,16 @@ class NonDominatingQueens
     end
   end
 
+  def verify_orbit_counts!
+    orbit_total = @orbit_counts.sum
+    weighted_total = @orbit_counts.each_with_index.sum do |count, i|
+      count * ORBIT_SIZES[i]
+    end
+    return if orbit_total == @solutions && weighted_total == @all_solutions
+
+    raise "internal orbit-count verification failed"
+  end
+
   # One representative per orbit under D4 (four rotations and four reflections).
   def canonical_orbit_size
     original = @chosen
@@ -236,6 +256,8 @@ ns.each do |n|
   all_verified &&= matches
   status = expected.nil? ? "" : (matches ? " OK" : " expected=#{expected}")
   puts "n=#{n} A001366(n)=#{result.free} A019317(n)=#{result.solutions}" \
+       " orbits={1:#{result.orbit_counts[0]},2:#{result.orbit_counts[1]}," \
+       "4:#{result.orbit_counts[2]},8:#{result.orbit_counts[3]}}" \
        " all=#{result.all_solutions} nodes=#{result.nodes}#{status}"
 end
 
