@@ -15,6 +15,17 @@
  * placement meeting or beating it is still searched, so the target is checked,
  * not blindly accepted.  For larger n, the optimum is discovered from scratch.
  * Board bitsets and square-index tables are allocated dynamically.
+ *
+ * Output status:
+ *   OK              Both A001366 and A019317 match stored reference values
+ *                   (currently n <= 16).
+ *   A001366_OK      A001366 matches its stored reference value, but A019317
+ *                   has no stored reference value and is therefore unchecked
+ *                   against OEIS (currently 17 <= n <= 30).
+ *   MISMATCH        At least one of A001366/A019317 does not match (n <= 16).
+ *   A001366_MISMATCH  A001366 does not match where only it has a reference.
+ * A019317, its orbit-size breakdown, and "all" are computed for every n even
+ * when no stored A019317 reference value is available.
  */
 #define SYMMETRIES 8
 #define ORBIT_SIZE_KINDS 4

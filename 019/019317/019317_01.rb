@@ -8,6 +8,14 @@
 # This is deliberately a straightforward exact search.  The published optimum
 # Free(n) is used as a branch-and-bound target for n <= 16.  For other n the
 # program discovers the optimum, but that means a much larger search.
+#
+# Output status:
+#   OK         Both the computed A001366 target and A019317 agree with the
+#              stored reference data (currently n <= 16).
+#   expected=  At least one of A001366/A019317 does not agree with its stored
+#              reference value.
+# No status is printed when this Ruby version has no stored reference value.
+# A019317, its orbit-size breakdown, and "all" are still computed in that case.
 
 KNOWN_FREE = {
   1 => 0,  2 => 0,   3 => 0,   4 => 1,
@@ -251,10 +259,19 @@ ns = if arguments.length == 1 && arguments[0].match?(/\A[1-9]\d*\z/)
 all_verified = true
 ns.each do |n|
   result = NonDominatingQueens.new(n).solve
+  expected_free = KNOWN_FREE[n]
   expected = KNOWN_A019317[n]
-  matches = expected.nil? || result.solutions == expected
+  free_matches = expected_free.nil? || result.free == expected_free
+  a019317_matches = expected.nil? || result.solutions == expected
+  matches = free_matches && a019317_matches
   all_verified &&= matches
-  status = expected.nil? ? "" : (matches ? " OK" : " expected=#{expected}")
+  status = if expected.nil?
+             ""
+           elsif matches
+             " OK"
+           else
+             " expected={A001366:#{expected_free},A019317:#{expected}}"
+           end
   puts "n=#{n} A001366(n)=#{result.free} A019317(n)=#{result.solutions}" \
        " orbits={1:#{result.orbit_counts[0]},2:#{result.orbit_counts[1]}," \
        "4:#{result.orbit_counts[2]},8:#{result.orbit_counts[3]}}" \
