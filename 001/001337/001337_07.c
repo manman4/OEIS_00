@@ -48,8 +48,6 @@
  * This file was independently written by manman4 from the published
  * description of the method and contains no SAWdoubler source code.
  *
- * Safety hardening:
- * Modified by OpenAI Codex on 2026-07-23.
  *
  * SPDX-License-Identifier: MIT
  *
@@ -57,6 +55,7 @@
  *          gcc-omp 001337_07.c -o 001337_07
  *
  * Usage:   ./001337_07 polygon N
+ *          ./001337_07 --upto N
  *          ./001337_07 walk L X Y Z
  *          ./001337_07 selftest
  */
@@ -987,10 +986,11 @@ static void usage(const char *prog)
 {
     fprintf(stderr,
         "usage: %s [--cutoff K] [--quiet] polygon N\n"
+        "       %s [--cutoff K] [--quiet] --upto N\n"
         "       %s [--cutoff K] [--quiet] walk L X Y Z\n"
         "       %s [--cutoff K] selftest\n"
         "where %d <= N <= %d and %d <= L <= %d\n",
-        prog, prog, prog, MIN_POLYGON_INDEX, MAX_POLYGON_INDEX,
+        prog, prog, prog, prog, MIN_POLYGON_INDEX, MAX_POLYGON_INDEX,
         MIN_WALK_STEPS, MAX_WALK_STEPS);
 }
 
@@ -1033,6 +1033,15 @@ static void print_checked_result(int label, i128 value)
     putchar('\n');
 }
 
+static void print_polygon_term(int n, size_t cutoff, int verbose)
+{
+    i128 value = polygon_count(n, cutoff, verbose);
+
+    if (n >= 3 && (value % (2 * n) != 0 || value % 12 != 0))
+        die("internal divisibility check failed");
+    print_checked_result(n, value);
+}
+
 int main(int argc, char **argv)
 {
     size_t cutoff = DEFAULT_CUTOFF;
@@ -1047,10 +1056,26 @@ int main(int argc, char **argv)
         } else if (strcmp(argv[i], "--quiet") == 0) {
             verbose = 0;
             i++;
+        } else if (strcmp(argv[i], "--upto") == 0) {
+            break;
         } else {
             usage(argv[0]);
             return EXIT_FAILURE;
         }
+    }
+
+    if (i < argc && strcmp(argv[i], "--upto") == 0) {
+        int n, limit;
+        if (i + 2 != argc) {
+            usage(argv[0]);
+            return EXIT_FAILURE;
+        }
+        limit = (int)parse_long_range(
+            argv[i + 1], MIN_POLYGON_INDEX, MAX_POLYGON_INDEX,
+            "upper index must be an integer from 1 to 19");
+        for (n = MIN_POLYGON_INDEX; n <= limit; n++)
+            print_polygon_term(n, cutoff, verbose);
+        return EXIT_SUCCESS;
     }
 
     if (i < argc && strcmp(argv[i], "selftest") == 0) {
@@ -1063,7 +1088,6 @@ int main(int argc, char **argv)
 
     if (i < argc && strcmp(argv[i], "polygon") == 0) {
         int n;
-        i128 value;
         if (i + 2 != argc) {
             usage(argv[0]);
             return EXIT_FAILURE;
@@ -1071,11 +1095,7 @@ int main(int argc, char **argv)
         n = (int)parse_long_range(
             argv[i + 1], MIN_POLYGON_INDEX, MAX_POLYGON_INDEX,
             "polygon index must be an integer from 1 to 19");
-        value = polygon_count(n, cutoff, verbose);
-        if (n >= 3 &&
-            (value % (2 * n) != 0 || value % 12 != 0))
-            die("internal divisibility check failed");
-        print_checked_result(n, value);
+        print_polygon_term(n, cutoff, verbose);
         return EXIT_SUCCESS;
     }
 

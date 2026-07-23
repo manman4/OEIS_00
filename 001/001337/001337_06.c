@@ -48,8 +48,6 @@
  * This is the A001337-specific, safety-hardened form of the independently
  * written 001337_07.c. It contains no SAWdoubler source code.
  *
- * Memory-intensive A001337 adaptation and safety hardening:
- * Modified by OpenAI Codex on 2026-07-23.
  *
  * SPDX-License-Identifier: MIT
  *
