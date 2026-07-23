@@ -56,6 +56,7 @@
  *
  * Usage:   ./001337_07 polygon N
  *          ./001337_07 --upto N
+ *          ./001337_07 --endpoints N
  *          ./001337_07 walk L X Y Z
  *          ./001337_07 selftest
  */
@@ -86,6 +87,7 @@ typedef unsigned __int128 u128;
 #define MAX_POLYGON_INDEX 19
 #define MIN_WALK_STEPS 1
 #define MAX_WALK_STEPS 18
+#define MIN_ENDPOINT_STEPS 3
 #define MAX_LATTICE_RADIUS 18
 #define DEFAULT_CUTOFF 32U
 #define HALF_WALK_LIMIT UINT64_C(2572306572) /* 12 * 11^8 */
@@ -965,6 +967,22 @@ typedef struct {
     size_t          value_count;
 } WalkReference;
 
+typedef struct {
+    const char *name;
+    int target[3];
+} EndpointSequence;
+
+static const EndpointSequence ENDPOINT_SEQUENCES[] = {
+    { "A003287", { 0, 1, 1 } },
+    { "A003288", { 0, 0, 2 } },
+    { "A005543", { 0, 2, 2 } },
+    { "A005544", { 1, 1, 2 } },
+    { "A005545", { 0, 1, 3 } },
+    { "A005546", { 0, 3, 3 } },
+    { "A005547", { 1, 2, 3 } },
+    { "A005548", { 2, 2, 2 } }
+};
+
 static int check_walk_reference(const WalkReference *ref, size_t cutoff,
                                 int section, i128 *cache)
 {
@@ -1106,10 +1124,12 @@ static void usage(const char *prog)
     fprintf(stderr,
         "usage: %s [--cutoff K] [--quiet] polygon N\n"
         "       %s [--cutoff K] [--quiet] --upto N\n"
+        "       %s [--cutoff K] --endpoints N\n"
         "       %s [--cutoff K] [--quiet] walk L X Y Z\n"
         "       %s [--cutoff K] selftest\n"
         "where %d <= N <= %d and %d <= L <= %d\n",
-        prog, prog, prog, prog, MIN_POLYGON_INDEX, MAX_POLYGON_INDEX,
+        prog, prog, prog, prog, prog,
+        MIN_POLYGON_INDEX, MAX_POLYGON_INDEX,
         MIN_WALK_STEPS, MAX_WALK_STEPS);
 }
 
@@ -1161,6 +1181,25 @@ static void print_polygon_term(int n, size_t cutoff, int verbose)
     print_checked_result(n, value);
 }
 
+static void print_endpoint_terms(int steps, size_t cutoff)
+{
+    size_t sequence;
+
+    for (sequence = 0;
+         sequence < sizeof ENDPOINT_SEQUENCES / sizeof ENDPOINT_SEQUENCES[0];
+         sequence++) {
+        const EndpointSequence *entry = &ENDPOINT_SEQUENCES[sequence];
+        i128 value = count_walks(steps, entry->target, cutoff, 0);
+
+        if (value < 0 || (u128)value > (u128)UINT64_MAX)
+            die("fixed-endpoint result is outside uint64_t range");
+        printf("%s %d ", entry->name, steps);
+        print_i128(value);
+        putchar('\n');
+        fflush(stdout);
+    }
+}
+
 int main(int argc, char **argv)
 {
     size_t cutoff = DEFAULT_CUTOFF;
@@ -1175,7 +1214,8 @@ int main(int argc, char **argv)
         } else if (strcmp(argv[i], "--quiet") == 0) {
             verbose = 0;
             i++;
-        } else if (strcmp(argv[i], "--upto") == 0) {
+        } else if (strcmp(argv[i], "--upto") == 0
+                   || strcmp(argv[i], "--endpoints") == 0) {
             break;
         } else {
             usage(argv[0]);
@@ -1194,6 +1234,19 @@ int main(int argc, char **argv)
             "upper index must be an integer from 1 to 19");
         for (n = MIN_POLYGON_INDEX; n <= limit; n++)
             print_polygon_term(n, cutoff, verbose);
+        return EXIT_SUCCESS;
+    }
+
+    if (i < argc && strcmp(argv[i], "--endpoints") == 0) {
+        int steps;
+        if (i + 2 != argc) {
+            usage(argv[0]);
+            return EXIT_FAILURE;
+        }
+        steps = (int)parse_long_range(
+            argv[i + 1], MIN_ENDPOINT_STEPS, MAX_WALK_STEPS,
+            "endpoint index must be an integer from 3 to 18");
+        print_endpoint_terms(steps, cutoff);
         return EXIT_SUCCESS;
     }
 
