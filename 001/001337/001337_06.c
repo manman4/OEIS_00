@@ -837,6 +837,55 @@ static const uint64_t A001337[] = {
     246353214240ULL, 2182457514960ULL, 19495053028800ULL, 175405981214592ULL
 };
 
+/* A003288(2..15), f.c.c. SAWs from (0,0,0) to (0,0,2), from OEIS. */
+static const uint64_t A003288[] = {
+    4ULL, 24ULL, 152ULL, 1080ULL, 8152ULL, 63976ULL, 518232ULL, 4299728ULL,
+    36360872ULL, 312284536ULL, 2716694880ULL, 23891215320ULL,
+    212064567160ULL, 1897551819416ULL
+};
+
+/* A005543(2..15), f.c.c. SAWs from (0,0,0) to (0,2,2), from OEIS. */
+static const uint64_t A005543[] = {
+    1ULL, 12ULL, 114ULL, 940ULL, 7568ULL, 61728ULL, 512996ULL, 4334884ULL,
+    37164700ULL, 322624804ULL, 2830973320ULL, 25074130996ULL,
+    223900666504ULL, 2013718244072ULL
+};
+
+/* A005544(2..15), f.c.c. SAWs from (0,0,0) to (1,1,2), from OEIS. */
+static const uint64_t A005544[] = {
+    2ULL, 18ULL, 136ULL, 1030ULL, 7992ULL, 63796ULL, 522474ULL, 4369840ULL,
+    37179840ULL, 320861342ULL, 2802304988ULL, 24725041598ULL,
+    220077128644ULL, 1973963065574ULL
+};
+
+/* A005545(3..14), f.c.c. SAWs from (0,0,0) to (0,1,3), from OEIS. */
+static const uint64_t A005545[] = {
+    9ULL, 96ULL, 835ULL, 7020ULL, 58857ULL, 497360ULL, 4251804ULL,
+    36765592ULL, 321262541ULL, 2833702404ULL, 25204186455ULL,
+    225846648440ULL
+};
+
+/* A005546(3..15), f.c.c. SAWs from (0,0,0) to (0,3,3), from OEIS. */
+static const uint64_t A005546[] = {
+    1ULL, 24ULL, 360ULL, 4000ULL, 39330ULL, 367912ULL, 3370604ULL,
+    30630980ULL, 277824572ULL, 2522478772ULL, 22959239730ULL,
+    209629138108ULL, 1920548559328ULL
+};
+
+/* A005547(3..14), f.c.c. SAWs from (0,0,0) to (1,2,3), from OEIS. */
+static const uint64_t A005547[] = {
+    3ULL, 52ULL, 575ULL, 5470ULL, 49303ULL, 436446ULL, 3850752ULL,
+    34063392ULL, 302790797ULL, 2706629188ULL, 24332099665ULL,
+    219940720414ULL
+};
+
+/* A005548(3..15), f.c.c. SAWs from (0,0,0) to (2,2,2), from OEIS. */
+static const uint64_t A005548[] = {
+    6ULL, 72ULL, 690ULL, 6192ULL, 53946ULL, 466800ULL, 4053816ULL,
+    35450940ULL, 312411672ULL, 2773863060ULL, 24802293720ULL,
+    223203954264ULL, 2020552369164ULL
+};
+
 /*
  * Independent reference: plain depth-first enumeration with no splitting,
  * no inclusion-exclusion and no symmetry reduction.  Exponential, but it
@@ -899,13 +948,67 @@ static i128 polygon_count(int n, size_t cutoff, int verbose)
     return (i128)12 * count_walks(n - 1, C, cutoff, verbose);
 }
 
+typedef struct {
+    const char     *name;
+    int             target[3];
+    int             offset;
+    const uint64_t *values;
+    size_t          value_count;
+} WalkReference;
+
+static int check_walk_reference(const WalkReference *ref, size_t cutoff,
+                                int section, i128 *cache)
+{
+    int n;
+    int last = ref->offset + (int)ref->value_count - 1;
+    int bad = 0;
+
+    if (last > 12) last = 12;                   /* keep the test quick */
+    printf("[%d] against OEIS %s, walks (0,0,0) -> (%d,%d,%d)\n",
+           section, ref->name, ref->target[0], ref->target[1],
+           ref->target[2]);
+    for (n = ref->offset; n <= last; n++) {
+        i128 got = count_walks(n, ref->target, cutoff, 0);
+        int ok = (got == (i128)ref->values[n - ref->offset]);
+        if (cache != NULL) cache[n] = got;
+        printf("     n=%2d  ", n); print_i128(got);
+        printf("  %s\n", ok ? "ok" : "MISMATCH");
+        if (!ok) bad = 1;
+    }
+    return bad;
+}
+
 static int selftest(size_t cutoff)
 {
     static const int endpoints[8][3] = {
         { 0, 1, 1 }, { 0, 0, 2 }, { 0, 2, 2 }, { 1, 1, 2 }, { 2, 2, 2 },
         { 0, 0, 4 }, { 0, 2, 4 }, { 2, 2, 4 }   /* large |t_i|: box sizing */
     };
+    static const WalkReference references[] = {
+        { "A003288", { 0, 0, 2 }, 2, A003288,
+          sizeof A003288 / sizeof A003288[0] },
+        { "A005543", { 0, 2, 2 }, 2, A005543,
+          sizeof A005543 / sizeof A005543[0] },
+        { "A005544", { 1, 1, 2 }, 2, A005544,
+          sizeof A005544 / sizeof A005544[0] },
+        { "A005545", { 0, 1, 3 }, 3, A005545,
+          sizeof A005545 / sizeof A005545[0] },
+        { "A005546", { 0, 3, 3 }, 3, A005546,
+          sizeof A005546 / sizeof A005546[0] },
+        { "A005547", { 1, 2, 3 }, 3, A005547,
+          sizeof A005547 / sizeof A005547[0] },
+        { "A005548", { 2, 2, 2 }, 3, A005548,
+          sizeof A005548 / sizeof A005548[0] }
+    };
     static const int C[3] = { 0, 1, 1 };
+    i128 got288[13] = { 0 };
+    i128 got543[13] = { 0 };
+    i128 got544[13] = { 0 };
+    i128 got548[13] = { 0 };
+    i128 *caches[] = {
+        got288, got543, got544, NULL, NULL, NULL, got548
+    };
+    size_t r;
     int n, e, bad = 0, limit;
 
     printf("[1] against OEIS A003287, walks (0,0,0) -> (0,1,1)\n");
@@ -930,11 +1033,27 @@ static int selftest(size_t cutoff)
         if (!ok) bad = 1;
     }
 
-    printf("[3] against brute-force enumeration, several endpoints\n");
+    for (r = 0; r < sizeof references / sizeof references[0]; r++)
+        if (check_walk_reference(&references[r], cutoff, (int)r + 3,
+                                 caches[r]))
+            bad = 1;
+
+    printf("[10] against brute-force enumeration, several endpoints\n");
     for (e = 0; e < 8; e++) {
         for (n = 2; n <= 9; n++) {
-            i128 fast = count_walks(n, endpoints[e], cutoff, 0);
+            i128 fast;
             i128 slow = brute_count(n, endpoints[e]);
+            if (e == 1) {
+                fast = got288[n];
+            } else if (e == 2) {
+                fast = got543[n];
+            } else if (e == 3) {
+                fast = got544[n];
+            } else if (e == 4) {
+                fast = got548[n];
+            } else {
+                fast = count_walks(n, endpoints[e], cutoff, 0);
+            }
             int ok = (fast == slow);
             printf("     (%d,%d,%d) n=%d  ", endpoints[e][0],
                    endpoints[e][1], endpoints[e][2], n);
@@ -945,7 +1064,7 @@ static int selftest(size_t cutoff)
         }
     }
 
-    printf("[4] divisibility, a(n) must be a multiple of 2n and of 12\n");
+    printf("[11] divisibility, a(n) must be a multiple of 2n and of 12\n");
     for (n = 3; n <= 12; n++) {
         i128 a = polygon_count(n, cutoff, 0);
         int ok = (a % (2 * n) == 0) && (a % 12 == 0);
@@ -953,7 +1072,7 @@ static int selftest(size_t cutoff)
         if (!ok) bad = 1;
     }
 
-    printf("[5] cut-off invariance, the result must not depend on --cutoff\n");
+    printf("[12] cut-off invariance, the result must not depend on --cutoff\n");
     {
         size_t trial[4] = { 1U, 64U, 4096U, 1000000U };
         i128 ref = 0;
