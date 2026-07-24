@@ -18,35 +18,37 @@
  * from C to X.  Represent each walk by its vertex set with X removed.  The
  * concatenation is self-avoiding exactly when a and b are disjoint, so
  *
- *     Answer(X) = #{ (a,b) in A x B : a n b = 0 }.
+ *     Answer(X) = #{ (a,b) in A x B : intersection(a,b) is empty }.
  *
  * By inclusion-exclusion over the shared set,
  *
  *     Answer(X) = sum_S (-1)^|S| f(S) g(S),
- *     f(S) = #{a in A : S subset of a},   g(S) = #{b in B : S subset of b}.
+ *     f(S) = #{a in A : S is a subset of a},
+ *     g(S) = #{b in B : S is a subset of b}.
  *
  * Enumerate S by adding elements in increasing order.  Writing "last" for
  * the largest element chosen so far, the whole subtree below a prefix S
  * collapses to a closed form:
  *
  *     subtree(S,last) = (-1)^|S| * #{ (a,b) : a,b contain S,
- *                                     (a n b) has no element > last }.
+ *                         intersection(a,b) has no element > last }.
  *
  * Two consequences drive the implementation:
  *   (1) the recursion is  SA*SB - sum over candidate elements s > last  of
  *       subtree(S+{s}, s), where SA, SB are the current list sizes;
  *   (2) at ANY node the subtree may instead be evaluated directly in
  *       O(|A_cur| * |B_cur|).  Recursing only while the lists are large
- *       gives a branch-and-bound whose cut-off threshold does not affect
- *       the result -- a strong built-in consistency check (--selftest).
+ *       gives an exact hybrid of recursive inclusion-exclusion and direct
+ *       pair counting.  Its cut-off threshold does not affect the result,
+ *       which provides a strong built-in consistency check (--selftest).
  *
  * Join points are reduced modulo the stabiliser of the ordered pair (O,C)
  * inside the 48-element f.c.c. point group (all signed coordinate
- * permutations); the stabiliser is computed at run time, so an arbitrary
- * target point may be used for cross-validation.
+ * permutations); the stabiliser is computed at run time, and arbitrary
+ * target points are used internally for cross-validation.
  *
- * This is the A001337-specific, safety-hardened form of the independently
- * written 001337_07.c. It contains no SAWdoubler source code.
+ * This is the A001337-specific interface to the independently written
+ * method also used in 001337_07.c. It contains no SAWdoubler source code.
  *
  *
  * SPDX-License-Identifier: MIT
@@ -338,7 +340,7 @@ static void bag_add(Bag *b, const int *path)
     }
     r = b->row + b->count * (size_t)b->width;
     for (i = 0; i < b->width; i++) r[i] = (uint16_t)path[i];
-    for (i = 1; i < b->width; i++) {          /* insertion sort, width <= 12 */
+    for (i = 1; i < b->width; i++) {           /* insertion sort, width <= 9 */
         uint16_t v = r[i];
         j = i - 1;
         while (j >= 0 && r[j] > v) { r[j + 1] = r[j]; j--; }
