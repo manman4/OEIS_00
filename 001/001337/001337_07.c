@@ -248,9 +248,14 @@ static void lattice_build(Lattice *g, int radius)
     if (n > 65535) die("box too large: site ids must fit in uint16_t");
 
     g->nsite = n;
-    g->px = xmalloc_array((size_t)n, sizeof(*g->px));
-    g->py = xmalloc_array((size_t)n, sizeof(*g->py));
-    g->pz = xmalloc_array((size_t)n, sizeof(*g->pz));
+    /*
+     * Zero-initialize these arrays as an additional safety property.  The
+     * exact fill count is checked below, so initialization is not relied on
+     * for correctness, but it also makes every failure path well-defined.
+     */
+    g->px = xcalloc_array((size_t)n, sizeof(*g->px));
+    g->py = xcalloc_array((size_t)n, sizeof(*g->py));
+    g->pz = xcalloc_array((size_t)n, sizeof(*g->pz));
 
     n = 0;
     for (x = -radius; x <= radius; x++)
@@ -263,6 +268,8 @@ static void lattice_build(Lattice *g, int radius)
                     g->pz[n] = (int16_t)z;
                     n++;
                 }
+    if (n != g->nsite)
+        die("internal f.c.c. lattice site count mismatch");
 
     g->adj = xmalloc_array(
         checked_product((size_t)g->nsite, 12U), sizeof(*g->adj));

@@ -76,6 +76,34 @@
  *      of the other's, so it cannot be a shared site and need not be stored.
  *      Narrower rows mean less traffic through the dominant gather.
  *
+ * Why these transformations are exact
+ * ------------------------------------
+ *
+ * For a fixed join point X, let A_X be the na-step half-walks O -> X and B_X
+ * the nb-step half-walks C -> X.  Its contribution is the number of pairs
+ * whose vertex sets meet only at X.
+ *
+ * When na == nb, the affine lattice automorphism h(v) = C - v exchanges O
+ * and C and maps X to C-X.  Applying h to both halves and exchanging their
+ * roles is a bijection between the valid pairs at X and those at C-X.
+ * Signed coordinate permutations fixing C give the other bijections used by
+ * the stabiliser.  Therefore every join point in an orbit has the same
+ * contribution, and computing one representative and multiplying by the
+ * number of distinct points in its orbit preserves the sum exactly.  When
+ * na != nb the endpoint exchange would also exchange unequal half lengths,
+ * so it is deliberately disabled.
+ *
+ * Before rows are shortened, an O-side half-walk that visits C is unusable:
+ * every C-side half-walk contains C at its start, so the pair already has a
+ * forbidden intersection.  The symmetric statement holds for a C-side
+ * half-walk visiting O.  Once those unusable walks are rejected, O occurs
+ * only in A rows and C only in B rows; neither can affect an A/B
+ * intersection test.  X is the one intended common vertex.  Consequently
+ * testing the internal sets A\{O,X} and B\{C,X} for disjointness is
+ * equivalent to testing the original halves for intersection only at X.
+ * Width-zero bags retain their multiplicity, and the degenerate two-step
+ * return along one undirected edge is handled explicitly in count_walks().
+ *
  * Measured on one core: 3.6x for even step counts, 2.0x for odd.
  *
  * Profiling note for anyone tempted to tune further: essentially all the time
@@ -90,6 +118,7 @@
  *
  * Usage:   ./001337_08 polygon N
  *          ./001337_08 --upto N
+ *          ./001337_08 --endpoints N
  *          ./001337_08 walk L X Y Z
  *          ./001337_08 selftest
  */
@@ -120,6 +149,7 @@ typedef unsigned __int128 u128;
 #define MAX_POLYGON_INDEX 19
 #define MIN_WALK_STEPS 1
 #define MAX_WALK_STEPS 18
+#define MIN_ENDPOINT_STEPS 3
 #define MAX_HALF_STEPS ((MAX_WALK_STEPS + 1) / 2)
 #define MAX_BAG_WIDTH (MAX_HALF_STEPS - 1)
 #define MAX_LATTICE_RADIUS 18
@@ -943,6 +973,22 @@ static const uint64_t A001337[] = {
     246353214240ULL, 2182457514960ULL, 19495053028800ULL, 175405981214592ULL
 };
 
+typedef struct {
+    const char *name;
+    int target[3];
+} EndpointSequence;
+
+static const EndpointSequence ENDPOINT_SEQUENCES[] = {
+    { "A003287", { 0, 1, 1 } },
+    { "A003288", { 0, 0, 2 } },
+    { "A005543", { 0, 2, 2 } },
+    { "A005544", { 1, 1, 2 } },
+    { "A005545", { 0, 1, 3 } },
+    { "A005546", { 0, 3, 3 } },
+    { "A005547", { 1, 2, 3 } },
+    { "A005548", { 2, 2, 2 } }
+};
+
 /*
  * Independent reference: plain depth-first enumeration with no splitting,
  * no inclusion-exclusion and no symmetry reduction.  Exponential, but it
@@ -1096,11 +1142,13 @@ static void usage(const char *prog)
     fprintf(stderr,
         "usage: %s [--cutoff K] [--quiet] polygon N\n"
         "       %s [--cutoff K] [--quiet] --upto N\n"
+        "       %s [--cutoff K] --endpoints N\n"
         "       %s [--cutoff K] [--quiet] walk L X Y Z\n"
         "       %s [--cutoff K] selftest\n"
         "where %d <= N <= %d and %d <= L <= %d\n"
         "walk L 0 0 0 counts rooted closed walks and equals A001337(L)\n",
-        prog, prog, prog, prog, MIN_POLYGON_INDEX, MAX_POLYGON_INDEX,
+        prog, prog, prog, prog, prog,
+        MIN_POLYGON_INDEX, MAX_POLYGON_INDEX,
         MIN_WALK_STEPS, MAX_WALK_STEPS);
 }
 
@@ -1152,6 +1200,25 @@ static void print_polygon_term(int n, size_t cutoff, int verbose)
     print_checked_result(n, value);
 }
 
+static void print_endpoint_terms(int steps, size_t cutoff)
+{
+    size_t sequence;
+
+    for (sequence = 0;
+         sequence < sizeof ENDPOINT_SEQUENCES / sizeof ENDPOINT_SEQUENCES[0];
+         sequence++) {
+        const EndpointSequence *entry = &ENDPOINT_SEQUENCES[sequence];
+        i128 value = count_walks(steps, entry->target, cutoff, 0);
+
+        if (value < 0 || (u128)value > (u128)UINT64_MAX)
+            die("fixed-endpoint result is outside uint64_t range");
+        printf("%s %d ", entry->name, steps);
+        print_i128(value);
+        putchar('\n');
+        fflush(stdout);
+    }
+}
+
 int main(int argc, char **argv)
 {
     size_t cutoff = DEFAULT_CUTOFF;
@@ -1166,7 +1233,8 @@ int main(int argc, char **argv)
         } else if (strcmp(argv[i], "--quiet") == 0) {
             verbose = 0;
             i++;
-        } else if (strcmp(argv[i], "--upto") == 0) {
+        } else if (strcmp(argv[i], "--upto") == 0
+                   || strcmp(argv[i], "--endpoints") == 0) {
             break;
         } else {
             usage(argv[0]);
@@ -1185,6 +1253,19 @@ int main(int argc, char **argv)
             "upper index must be an integer from 1 to 19");
         for (n = MIN_POLYGON_INDEX; n <= limit; n++)
             print_polygon_term(n, cutoff, verbose);
+        return EXIT_SUCCESS;
+    }
+
+    if (i < argc && strcmp(argv[i], "--endpoints") == 0) {
+        int steps;
+        if (i + 2 != argc) {
+            usage(argv[0]);
+            return EXIT_FAILURE;
+        }
+        steps = (int)parse_long_range(
+            argv[i + 1], MIN_ENDPOINT_STEPS, MAX_WALK_STEPS,
+            "endpoint index must be an integer from 3 to 18");
+        print_endpoint_terms(steps, cutoff);
         return EXIT_SUCCESS;
     }
 
