@@ -65,6 +65,7 @@
  * Usage:
  *   ./001394_03 n
  *   ./001394_03 --upto N
+ *   ./001394_03 --endpoints N
  *   ./001394_03 --selftest
  *   ./001394_03 --engine word|bag n
  *   ./001394_03 --cutoff K n
@@ -510,6 +511,82 @@ static void build_orbits(const Lattice *lattice, int *representative,
     }
 }
 
+/*
+ * Endpoint-x counts are not invariant under all 24 rooted symmetries: a
+ * coordinate permutation can turn an x condition into a y or z condition,
+ * and a sign change can turn x=t into x=-t.  The four symmetries satisfying
+ *
+ *     output_x = input_x
+ *
+ * for every point do preserve each requested x value separately.  Orbit
+ * reduction under exactly this subgroup is therefore valid simultaneously
+ * for x=0 and x=2, or for x=1 and x=3.
+ */
+static int symmetry_preserves_x(int symmetry)
+{
+    int permutation;
+    int signs;
+
+    if (symmetry < 0 || symmetry >= 24)
+        die("internal invalid diamond symmetry");
+    permutation = symmetry / 4;
+    signs = symmetry % 4;
+    return PERMUTATION[permutation][0] == 0
+        && EVEN_SIGNS[signs][0] == 1;
+}
+
+static void build_x_preserving_orbits(const Lattice *lattice,
+                                      int *representative,
+                                      int *orbit_size)
+{
+    int site;
+
+    for (site = 0; site < lattice->nsite; ++site) {
+        int point[3] = {
+            lattice->x[site], lattice->y[site], lattice->z[site]
+        };
+        int images[24];
+        int image_count = 0;
+        int best = site;
+        int distinct = 0;
+        int symmetry;
+
+        for (symmetry = 0; symmetry < 24; ++symmetry) {
+            int image[3];
+            int other;
+
+            if (!symmetry_preserves_x(symmetry))
+                continue;
+            symmetry_apply(symmetry, point, image);
+            if (image[0] != point[0])
+                die("x-preserving symmetry changed x");
+            other = site_of(lattice, image[0], image[1], image[2]);
+            if (other < 0)
+                die("diamond symmetry left the finite coordinate box");
+            images[image_count++] = other;
+            if (other < best)
+                best = other;
+        }
+        if (image_count != 4)
+            die("internal x-preserving symmetry count is not four");
+        for (symmetry = 0; symmetry < image_count; ++symmetry) {
+            int earlier;
+            int fresh = 1;
+
+            for (earlier = 0; earlier < symmetry; ++earlier) {
+                if (images[earlier] == images[symmetry]) {
+                    fresh = 0;
+                    break;
+                }
+            }
+            if (fresh)
+                ++distinct;
+        }
+        representative[site] = best;
+        orbit_size[site] = site == best ? distinct : 0;
+    }
+}
+
 /* ------------------------------------------------------------------------- */
 /* Bags of sorted vertex sets                                                */
 /* ------------------------------------------------------------------------- */
@@ -519,9 +596,11 @@ typedef uint16_t SiteId;
 typedef struct {
     SiteId *row;
     uint64_t *multiplicity;
+    int16_t *endpoint_x;
     size_t count;
     size_t capacity;
     int width;
+    int track_endpoint;
 } Bag;
 
 static void bag_init(Bag *bag, int width)
@@ -530,15 +609,24 @@ static void bag_init(Bag *bag, int width)
         die("internal half-walk width out of range");
     bag->row = NULL;
     bag->multiplicity = NULL;
+    bag->endpoint_x = NULL;
     bag->count = 0U;
     bag->capacity = 0U;
     bag->width = width;
+    bag->track_endpoint = 0;
+}
+
+static void bag_init_endpoints(Bag *bag, int width)
+{
+    bag_init(bag, width);
+    bag->track_endpoint = 1;
 }
 
 static void bag_free(Bag *bag)
 {
     free(bag->row);
     free(bag->multiplicity);
+    free(bag->endpoint_x);
 }
 
 static void sort_row(SiteId *row, int width)
@@ -557,34 +645,58 @@ static void sort_row(SiteId *row, int width)
     }
 }
 
-static void bag_add(Bag *bag, const int *sites)
+static void bag_reserve_one(Bag *bag)
+{
+    size_t new_capacity;
+
+    if (bag->count < bag->capacity)
+        return;
+    if (bag->capacity == 0U) {
+        new_capacity = 64U;
+    } else {
+        if (bag->capacity > SIZE_MAX / 2U)
+            die("half-walk capacity overflow");
+        new_capacity = bag->capacity * 2U;
+    }
+    if ((uint64_t)new_capacity > HALF_WALK_LIMIT)
+        new_capacity = (size_t)HALF_WALK_LIMIT;
+    if (new_capacity <= bag->capacity)
+        die("half-walk capacity cannot grow");
+    if (bag->width > 0) {
+        bag->row = xrealloc_array(
+            bag->row,
+            checked_product(new_capacity, (size_t)bag->width),
+            sizeof(*bag->row));
+    }
+    if (bag->track_endpoint) {
+        bag->endpoint_x = xrealloc_array(
+            bag->endpoint_x, new_capacity, sizeof(*bag->endpoint_x));
+    }
+    bag->capacity = new_capacity;
+}
+
+static void bag_add_internal(Bag *bag, const int *sites,
+                             int have_endpoint, int endpoint_x)
 {
     SiteId *destination;
     int index;
 
     if ((uint64_t)bag->count >= HALF_WALK_LIMIT)
         die("half-walk count exceeded its proved bound");
-    if (bag->width == 0) {
+    if (bag->track_endpoint != have_endpoint)
+        die("half-walk endpoint tracking mode mismatch");
+    if (endpoint_x < INT16_MIN || endpoint_x > INT16_MAX)
+        die("half-walk endpoint x does not fit in int16_t");
+    if (bag->width == 0 && !bag->track_endpoint) {
         ++bag->count;
         return;
     }
-    if (bag->count == bag->capacity) {
-        size_t new_capacity;
-
-        if (bag->capacity == 0U) {
-            new_capacity = 64U;
-        } else {
-            if (bag->capacity > SIZE_MAX / 2U)
-                die("half-walk capacity overflow");
-            new_capacity = bag->capacity * 2U;
-        }
-        if ((uint64_t)new_capacity > HALF_WALK_LIMIT)
-            new_capacity = (size_t)HALF_WALK_LIMIT;
-        bag->row = xrealloc_array(
-            bag->row,
-            checked_product(new_capacity, (size_t)bag->width),
-            sizeof(*bag->row));
-        bag->capacity = new_capacity;
+    bag_reserve_one(bag);
+    if (bag->track_endpoint)
+        bag->endpoint_x[bag->count] = (int16_t)endpoint_x;
+    if (bag->width == 0) {
+        ++bag->count;
+        return;
     }
     destination =
         bag->row + bag->count * (size_t)bag->width;
@@ -597,6 +709,16 @@ static void bag_add(Bag *bag, const int *sites)
     ++bag->count;
 }
 
+static void bag_add(Bag *bag, const int *sites)
+{
+    bag_add_internal(bag, sites, 0, 0);
+}
+
+static void bag_add_endpoint(Bag *bag, const int *sites, int endpoint_x)
+{
+    bag_add_internal(bag, sites, 1, endpoint_x);
+}
+
 static void bag_compress(Bag *bag, int nsite)
 {
     size_t original_count = bag->count;
@@ -605,6 +727,7 @@ static void bag_compress(Bag *bag, int nsite)
     size_t *bucket;
     SiteId *output_rows;
     uint64_t *output_multiplicity;
+    int16_t *output_endpoint_x = NULL;
     size_t row;
     size_t unique;
     int column;
@@ -614,7 +737,7 @@ static void bag_compress(Bag *bag, int nsite)
         bag->multiplicity = NULL;
         return;
     }
-    if (bag->width == 0) {
+    if (bag->width == 0 && !bag->track_endpoint) {
         bag->multiplicity =
             xmalloc_array(1U, sizeof(*bag->multiplicity));
         bag->multiplicity[0] = (uint64_t)original_count;
@@ -628,6 +751,33 @@ static void bag_compress(Bag *bag, int nsite)
     bucket = xcalloc_array((size_t)nsite + 1U, sizeof(*bucket));
     for (row = 0; row < original_count; ++row)
         order[row] = row;
+
+    if (bag->track_endpoint) {
+        size_t endpoint_bucket[2U * MAX_HALF_STEPS + 2U] = {0U};
+        size_t endpoint_bins = 2U * MAX_HALF_STEPS + 1U;
+
+        for (row = 0; row < original_count; ++row) {
+            int endpoint = bag->endpoint_x[order[row]];
+            size_t value;
+
+            if (endpoint < -MAX_HALF_STEPS
+                || endpoint > MAX_HALF_STEPS)
+                die("template endpoint x is outside its proved range");
+            value = (size_t)(endpoint + MAX_HALF_STEPS);
+            ++endpoint_bucket[value + 1U];
+        }
+        for (row = 0; row < endpoint_bins; ++row)
+            endpoint_bucket[row + 1U] += endpoint_bucket[row];
+        for (row = 0; row < original_count; ++row) {
+            int endpoint = bag->endpoint_x[order[row]];
+            size_t value =
+                (size_t)(endpoint + MAX_HALF_STEPS);
+
+            scratch[endpoint_bucket[value]++] = order[row];
+        }
+        memcpy(order, scratch,
+               checked_product(original_count, sizeof(*order)));
+    }
 
     for (column = bag->width - 1; column >= 0; --column) {
         if (column != bag->width - 1) {
@@ -655,25 +805,53 @@ static void bag_compress(Bag *bag, int nsite)
         sizeof(*output_rows));
     output_multiplicity =
         xmalloc_array(original_count, sizeof(*output_multiplicity));
+    if (bag->track_endpoint) {
+        output_endpoint_x =
+            xmalloc_array(original_count, sizeof(*output_endpoint_x));
+    }
     unique = 0U;
     for (row = 0; row < original_count; ++row) {
         const SiteId *source =
-            bag->row + order[row] * (size_t)bag->width;
+            bag->width > 0
+            ? bag->row + order[row] * (size_t)bag->width : NULL;
+        int same_row = 0;
+        int same_endpoint =
+            !bag->track_endpoint
+            || (unique > 0U
+                && output_endpoint_x[unique - 1U]
+                   == bag->endpoint_x[order[row]]);
 
-        if (unique > 0U
-            && memcmp(output_rows + (unique - 1U) * (size_t)bag->width,
-                      source,
-                      checked_product((size_t)bag->width,
-                                      sizeof(*output_rows))) == 0) {
+        if (unique > 0U) {
+            if (bag->width == 0) {
+                same_row = 1;
+            } else {
+                if (source == NULL)
+                    die("internal null compressed half-walk row");
+                same_row =
+                    memcmp(
+                        output_rows
+                            + (unique - 1U) * (size_t)bag->width,
+                        source,
+                        checked_product((size_t)bag->width,
+                                        sizeof(*output_rows))) == 0;
+            }
+        }
+        if (same_row && same_endpoint) {
             if (output_multiplicity[unique - 1U] == UINT64_MAX)
                 die("half-walk multiplicity overflow");
             ++output_multiplicity[unique - 1U];
         } else {
-            memcpy(output_rows + unique * (size_t)bag->width,
-                   source,
-                   checked_product((size_t)bag->width,
-                                   sizeof(*output_rows)));
+            if (bag->width > 0) {
+                memcpy(output_rows + unique * (size_t)bag->width,
+                       source,
+                       checked_product((size_t)bag->width,
+                                       sizeof(*output_rows)));
+            }
             output_multiplicity[unique] = 1U;
+            if (bag->track_endpoint) {
+                output_endpoint_x[unique] =
+                    bag->endpoint_x[order[row]];
+            }
             ++unique;
         }
     }
@@ -681,12 +859,19 @@ static void bag_compress(Bag *bag, int nsite)
     free(scratch);
     free(bucket);
     free(bag->row);
+    free(bag->endpoint_x);
     bag->row = xrealloc_array(
         output_rows,
         checked_product(unique, (size_t)bag->width),
         sizeof(*output_rows));
     bag->multiplicity = xrealloc_array(
         output_multiplicity, unique, sizeof(*output_multiplicity));
+    if (bag->track_endpoint) {
+        bag->endpoint_x = xrealloc_array(
+            output_endpoint_x, unique, sizeof(*output_endpoint_x));
+    } else {
+        bag->endpoint_x = NULL;
+    }
     bag->count = unique;
     bag->capacity = unique;
 }
@@ -721,7 +906,13 @@ static void generate_recursively(Generator *generator, int depth)
             if (generator->representative[current] == current)
                 bag_add(&generator->midpoint_bags[current], generator->path);
         } else {
-            bag_add(generator->template_bag, generator->path + 1);
+            if (generator->template_bag->track_endpoint) {
+                bag_add_endpoint(
+                    generator->template_bag, generator->path + 1,
+                    generator->lattice->x[current]);
+            } else {
+                bag_add(generator->template_bag, generator->path + 1);
+            }
         }
         return;
     }
@@ -795,6 +986,8 @@ static void transform_template_bag(const Lattice *lattice,
     int sign = kind == A_SUBLATTICE ? 1 : -1;
     size_t row;
 
+    if (template_bag->track_endpoint)
+        die("endpoint-tracked template cannot use materialized transport");
     if (kind == NOT_A_DIAMOND_VERTEX)
         die("internal midpoint is not on the diamond lattice");
     bag_init(transformed, template_bag->width);
@@ -1146,9 +1339,11 @@ static void projection_cache_insert(ProjectionCache *cache,
     ++cache->count;
 }
 
-static i128 count_disjoint_pairs_word_oriented(
+static void count_disjoint_pairs_word_oriented_multi(
     const Bag *indexed, const Bag *queries, int nsite,
-    const SiteId *query_site_map)
+    const SiteId *query_site_map, const int *target_x,
+    size_t target_count, int midpoint_x, int transport_sign,
+    i128 *answer)
 {
     int *site_slot;
     int *query_site_slot;
@@ -1159,12 +1354,22 @@ static i128 count_disjoint_pairs_word_oriented(
     size_t active_sites = 0U;
     size_t row;
     size_t word;
-    i128 answer = 0;
+    size_t target;
 
+    if (target_count == 0U || answer == NULL)
+        die("word engine requires at least one output target");
+    for (target = 0U; target < target_count; ++target)
+        answer[target] = 0;
     if (indexed->count == 0U || queries->count == 0U)
-        return 0;
+        return;
     if (nsite <= 0)
         die("internal nonpositive lattice size");
+    if (target_x != NULL && !queries->track_endpoint)
+        die("endpoint targets require an endpoint-tracked query bag");
+    if (target_x == NULL && target_count != 1U)
+        die("unfiltered word count must have exactly one output");
+    if (transport_sign != 1 && transport_sign != -1)
+        die("word engine received an invalid transport sign");
     if (indexed->count > SIZE_MAX - 63U)
         die("word-index size overflow");
     word_count = (indexed->count + 63U) / 64U;
@@ -1233,12 +1438,27 @@ static i128 count_disjoint_pairs_word_oriented(
 
     for (row = 0; row < queries->count; ++row) {
         SiteId projection[MAX_BAG_WIDTH];
-        int projection_length = build_projection_key(
-            queries, row, query_site_slot, nsite, projection);
-        uint64_t hash = projection_hash(
-            projection, projection_length);
+        size_t category = 0U;
+        int projection_length;
+        uint64_t hash;
         uint64_t disjoint_weight = 0U;
         int projection_index;
+
+        if (target_x != NULL) {
+            int absolute_endpoint =
+                midpoint_x
+                + transport_sign * (int)queries->endpoint_x[row];
+
+            for (category = 0U; category < target_count; ++category) {
+                if (absolute_endpoint == target_x[category])
+                    break;
+            }
+            if (category == target_count)
+                continue;
+        }
+        projection_length = build_projection_key(
+            queries, row, query_site_slot, nsite, projection);
+        hash = projection_hash(projection, projection_length);
 
         /*
          * Sites outside the indexed family's support cannot create an
@@ -1249,8 +1469,9 @@ static i128 count_disjoint_pairs_word_oriented(
         if (projection_cache_find(
                 &projection_cache, hash, projection, projection_length,
                 &disjoint_weight)) {
-            answer += (i128)queries->multiplicity[row]
-                      * (i128)disjoint_weight;
+            answer[category] +=
+                (i128)queries->multiplicity[row]
+                * (i128)disjoint_weight;
             continue;
         }
 
@@ -1329,8 +1550,9 @@ static i128 count_disjoint_pairs_word_oriented(
         projection_cache_insert(
             &projection_cache, hash, projection_length,
             projection, disjoint_weight);
-        answer += (i128)queries->multiplicity[row]
-                  * (i128)disjoint_weight;
+        answer[category] +=
+            (i128)queries->multiplicity[row]
+            * (i128)disjoint_weight;
     }
 
     projection_cache_free(&projection_cache);
@@ -1338,9 +1560,32 @@ static i128 count_disjoint_pairs_word_oriented(
     free(site_bits);
     free(query_site_slot);
     free(site_slot);
-    if (answer < 0)
-        die("internal negative word-engine result");
+    for (target = 0U; target < target_count; ++target) {
+        if (answer[target] < 0)
+            die("internal negative word-engine result");
+    }
+}
+
+static i128 count_disjoint_pairs_word_oriented(
+    const Bag *indexed, const Bag *queries, int nsite,
+    const SiteId *query_site_map)
+{
+    i128 answer;
+
+    count_disjoint_pairs_word_oriented_multi(
+        indexed, queries, nsite, query_site_map,
+        NULL, 1U, 0, 1, &answer);
     return answer;
+}
+
+static void count_disjoint_pairs_word_endpoints(
+    const Bag *indexed, const Bag *queries, int nsite,
+    const SiteId *query_site_map, int midpoint_x, int transport_sign,
+    const int target_x[2], i128 answer[2])
+{
+    count_disjoint_pairs_word_oriented_multi(
+        indexed, queries, nsite, query_site_map,
+        target_x, 2U, midpoint_x, transport_sign, answer);
 }
 
 static i128 count_disjoint_pairs_word(const Bag *a, const Bag *b,
@@ -1716,6 +1961,144 @@ static i128 count_diamond_saws(int steps, size_t cutoff, Engine engine,
     return total;
 }
 
+/*
+ * Count two endpoint-x classes for one walk length in a single pass.
+ *
+ * The second-half template retains its relative endpoint x coordinate.
+ * Under phi_X(v)=X+v or X-v, that endpoint becomes
+ *
+ *     X.x + transport_sign * relative_endpoint_x.
+ *
+ * Consequently the same disjointness index and projection cache serve both
+ * requested endpoint classes.  Midpoint reduction uses only the four rooted
+ * symmetries that preserve x exactly; using the full 24-element group here
+ * would mix different endpoint conditions and would be incorrect.
+ */
+static void count_diamond_endpoint_x_pair(int steps,
+                                          const int target_x[2],
+                                          int verbose, i128 answer[2])
+{
+    Lattice lattice;
+    int origin;
+    int first_half;
+    int second_half;
+    int *representative;
+    int *orbit_size;
+    Bag *midpoint_bags;
+    Bag template_bag;
+    SiteId *template_sites;
+    size_t template_site_count;
+    int *midpoints;
+    int midpoint_count = 0;
+    int site;
+    i128 total0 = 0;
+    i128 total1 = 0;
+    int thread_count = 1;
+
+    if (target_x == NULL || answer == NULL)
+        die("internal null endpoint-count argument");
+    if (target_x[0] == target_x[1])
+        die("endpoint targets must be distinct");
+    if (steps < 1 || steps > MAX_STEPS)
+        die("internal endpoint-count step count out of range");
+
+    first_half = (steps + 1) / 2;
+    second_half = steps - first_half;
+    lattice_build(&lattice, steps);
+    origin = site_of(&lattice, 0, 0, 0);
+    if (origin < 0)
+        die("diamond-lattice origin is missing");
+
+    representative =
+        xcalloc_array((size_t)lattice.nsite, sizeof(*representative));
+    orbit_size =
+        xcalloc_array((size_t)lattice.nsite, sizeof(*orbit_size));
+    build_x_preserving_orbits(&lattice, representative, orbit_size);
+
+    midpoint_bags =
+        xcalloc_array((size_t)lattice.nsite, sizeof(*midpoint_bags));
+    for (site = 0; site < lattice.nsite; ++site)
+        bag_init(&midpoint_bags[site], first_half);
+    generate_midpoint_bags(
+        &lattice, first_half, origin, representative, midpoint_bags);
+
+    bag_init_endpoints(&template_bag, second_half);
+    generate_template_bag(&lattice, second_half, origin, &template_bag);
+    bag_compress(&template_bag, lattice.nsite);
+    template_sites = collect_bag_sites(
+        &template_bag, lattice.nsite, &template_site_count);
+
+    midpoints =
+        xmalloc_array((size_t)lattice.nsite, sizeof(*midpoints));
+    for (site = 0; site < lattice.nsite; ++site) {
+        if (midpoint_bags[site].count != 0U) {
+            if (representative[site] != site || orbit_size[site] <= 0)
+                die("nonrepresentative endpoint midpoint bag is nonempty");
+            bag_compress(&midpoint_bags[site], lattice.nsite);
+            midpoints[midpoint_count++] = site;
+        }
+    }
+
+#ifdef _OPENMP
+    thread_count = omp_get_max_threads();
+    if (thread_count < 1)
+        die("invalid OpenMP thread count");
+    if (thread_count > MAX_OMP_THREADS)
+        thread_count = MAX_OMP_THREADS;
+#endif
+    if (verbose) {
+        fprintf(stderr,
+                "endpoint-x steps=%d split=%d+%d targets=%d,%d sites=%d "
+                "midpoint_orbits=%d template_sets=%zu template_sites=%zu "
+                "threads=%d engine=word\n",
+                steps, first_half, second_half, target_x[0], target_x[1],
+                lattice.nsite, midpoint_count, template_bag.count,
+                template_site_count, thread_count);
+    }
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic, 1) reduction(+:total0,total1) \
+    num_threads(thread_count)
+#endif
+    for (site = 0; site < midpoint_count; ++site) {
+        int midpoint = midpoints[site];
+        int kind = diamond_kind(
+            lattice.x[midpoint], lattice.y[midpoint], lattice.z[midpoint]);
+        int transport_sign;
+        SiteId *transport_map;
+        i128 contribution[2];
+
+        if (kind == NOT_A_DIAMOND_VERTEX)
+            die("internal endpoint midpoint is not on the diamond lattice");
+        transport_sign = kind == A_SUBLATTICE ? 1 : -1;
+        transport_map = build_transport_map(
+            &lattice, midpoint, template_sites, template_site_count);
+        count_disjoint_pairs_word_endpoints(
+            &midpoint_bags[midpoint], &template_bag, lattice.nsite,
+            transport_map, lattice.x[midpoint], transport_sign,
+            target_x, contribution);
+        free(transport_map);
+        total0 += (i128)orbit_size[midpoint] * contribution[0];
+        total1 += (i128)orbit_size[midpoint] * contribution[1];
+    }
+
+    for (site = 0; site < lattice.nsite; ++site)
+        bag_free(&midpoint_bags[site]);
+    free(midpoints);
+    free(template_sites);
+    bag_free(&template_bag);
+    free(midpoint_bags);
+    free(orbit_size);
+    free(representative);
+    lattice_free(&lattice);
+
+    if (total0 < 0 || (u128)total0 > (u128)UINT64_MAX
+        || total1 < 0 || (u128)total1 > (u128)UINT64_MAX)
+        die("endpoint-x count is outside uint64_t range");
+    answer[0] = total0;
+    answer[1] = total1;
+}
+
 /* ------------------------------------------------------------------------- */
 /* Independent DFS and known values                                         */
 /* ------------------------------------------------------------------------- */
@@ -1950,6 +2333,54 @@ static int selftest(size_t cutoff, Engine engine)
         if (!ok)
             failed = 1;
     }
+    printf("[6] batched endpoint-x engine against known values\n");
+    {
+        int sequence_index;
+
+        for (sequence_index = 1; sequence_index <= 6; ++sequence_index) {
+            static const int even_targets[2] = {0, 2};
+            i128 even[2];
+            int ok396;
+            int ok397;
+
+            count_diamond_endpoint_x_pair(
+                2 * sequence_index, even_targets, 0, even);
+            ok396 =
+                even[0] == (i128)KNOWN_A001396[sequence_index];
+            ok397 =
+                even[1] == (i128)KNOWN_A001397[sequence_index - 1];
+            printf("    A001396(%d) ", sequence_index);
+            print_i128(even[0]);
+            printf("  %s; A001397(%d) ", ok396 ? "ok" : "MISMATCH",
+                   sequence_index);
+            print_i128(even[1]);
+            printf("  %s\n", ok397 ? "ok" : "MISMATCH");
+            if (!ok396 || !ok397)
+                failed = 1;
+
+            if (sequence_index <= 5) {
+                static const int odd_targets[2] = {1, 3};
+                i128 odd[2];
+                int ok395;
+                int ok398;
+
+                count_diamond_endpoint_x_pair(
+                    2 * sequence_index + 1, odd_targets, 0, odd);
+                ok395 =
+                    odd[0] == (i128)KNOWN_A001395[sequence_index];
+                ok398 =
+                    odd[1] == (i128)KNOWN_A001398[sequence_index - 1];
+                printf("    A001395(%d) ", sequence_index);
+                print_i128(odd[0]);
+                printf("  %s; A001398(%d) ",
+                       ok395 ? "ok" : "MISMATCH", sequence_index);
+                print_i128(odd[1]);
+                printf("  %s\n", ok398 ? "ok" : "MISMATCH");
+                if (!ok395 || !ok398)
+                    failed = 1;
+            }
+        }
+    }
     printf("%s\n", failed ? "SELFTEST FAILED" : "selftest passed");
     return failed;
 }
@@ -1971,6 +2402,27 @@ static int parse_steps(const char *text)
         die("step count must be an integer");
     if (value < MIN_STEPS || value > MAX_STEPS)
         die("step count must be an integer from 0 to 40");
+    return (int)value;
+}
+
+static int parse_endpoint_index(const char *text)
+{
+    char *end = NULL;
+    long value;
+    const int maximum = (MAX_STEPS - 1) / 2;
+
+    if (text == NULL || *text == '\0')
+        die("missing endpoint sequence index");
+    errno = 0;
+    value = strtol(text, &end, 10);
+    if (errno == ERANGE || end == text || *end != '\0')
+        die("endpoint sequence index must be an integer");
+    /*
+     * A001397 and A001398 have offset 1, so a common index for all four
+     * sequences begins at 1.  The longest requested walk has 2*N+1 steps.
+     */
+    if (value < 1 || value > maximum)
+        die("endpoint sequence index must be an integer from 1 to 19");
     return (int)value;
 }
 
@@ -2010,14 +2462,40 @@ static void print_term(int steps, size_t cutoff, Engine engine)
     fflush(stdout);
 }
 
+static void print_endpoint_terms(int sequence_index)
+{
+    static const int odd_targets[2] = {1, 3};
+    static const int even_targets[2] = {0, 2};
+    int verbose = getenv("A001394_VERBOSE") != NULL;
+    i128 odd[2];
+    i128 even[2];
+
+    count_diamond_endpoint_x_pair(
+        2 * sequence_index + 1, odd_targets, verbose, odd);
+    count_diamond_endpoint_x_pair(
+        2 * sequence_index, even_targets, verbose, even);
+
+    printf("A001395(%d) ", sequence_index);
+    print_i128(odd[0]);
+    printf("\nA001396(%d) ", sequence_index);
+    print_i128(even[0]);
+    printf("\nA001397(%d) ", sequence_index);
+    print_i128(even[1]);
+    printf("\nA001398(%d) ", sequence_index);
+    print_i128(odd[1]);
+    putchar('\n');
+    fflush(stdout);
+}
+
 static void usage(const char *program)
 {
     fprintf(stderr,
             "usage: %s [--engine word|bag] [--cutoff K] n\n"
             "       %s [--engine word|bag] [--cutoff K] --upto N\n"
+            "       %s [--engine word] --endpoints N\n"
             "       %s [--engine word|bag] [--cutoff K] --selftest\n"
-            "where 0 <= n,N <= 40\n",
-            program, program, program);
+            "where 0 <= n,N <= 40, and 1 <= endpoint N <= 19\n",
+            program, program, program, program);
 }
 
 int main(int argc, char **argv)
@@ -2059,6 +2537,19 @@ int main(int argc, char **argv)
         limit = parse_steps(argv[argument + 1]);
         for (steps = MIN_STEPS; steps <= limit; ++steps)
             print_term(steps, cutoff, engine);
+        return EXIT_SUCCESS;
+    }
+    if (argument < argc && strcmp(argv[argument], "--endpoints") == 0) {
+        int sequence_index;
+
+        if (argument + 2 != argc) {
+            usage(argv[0]);
+            return EXIT_FAILURE;
+        }
+        if (engine != ENGINE_WORD)
+            die("--endpoints requires --engine word");
+        sequence_index = parse_endpoint_index(argv[argument + 1]);
+        print_endpoint_terms(sequence_index);
         return EXIT_SUCCESS;
     }
     if (argument + 1 == argc) {
