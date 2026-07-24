@@ -66,6 +66,7 @@
  *   ./001394_03 n
  *   ./001394_03 --upto N
  *   ./001394_03 --endpoints N
+ *   ./001394_03 --endpoints N 001396
  *   ./001394_03 --selftest
  *   ./001394_03 --engine word|bag n
  *   ./001394_03 --cutoff K n
@@ -1578,14 +1579,14 @@ static i128 count_disjoint_pairs_word_oriented(
     return answer;
 }
 
-static void count_disjoint_pairs_word_endpoints(
+static void count_disjoint_pairs_word_endpoint_targets(
     const Bag *indexed, const Bag *queries, int nsite,
     const SiteId *query_site_map, int midpoint_x, int transport_sign,
-    const int target_x[2], i128 answer[2])
+    const int *target_x, size_t target_count, i128 *answer)
 {
     count_disjoint_pairs_word_oriented_multi(
         indexed, queries, nsite, query_site_map,
-        target_x, 2U, midpoint_x, transport_sign, answer);
+        target_x, target_count, midpoint_x, transport_sign, answer);
 }
 
 static i128 count_disjoint_pairs_word(const Bag *a, const Bag *b,
@@ -1962,7 +1963,7 @@ static i128 count_diamond_saws(int steps, size_t cutoff, Engine engine,
 }
 
 /*
- * Count two endpoint-x classes for one walk length in a single pass.
+ * Count one or two endpoint-x classes for one walk length in a single pass.
  *
  * The second-half template retains its relative endpoint x coordinate.
  * Under phi_X(v)=X+v or X-v, that endpoint becomes
@@ -1974,9 +1975,10 @@ static i128 count_diamond_saws(int steps, size_t cutoff, Engine engine,
  * symmetries that preserve x exactly; using the full 24-element group here
  * would mix different endpoint conditions and would be incorrect.
  */
-static void count_diamond_endpoint_x_pair(int steps,
-                                          const int target_x[2],
-                                          int verbose, i128 answer[2])
+static void count_diamond_endpoint_x_targets(int steps,
+                                             const int *target_x,
+                                             size_t target_count,
+                                             int verbose, i128 *answer)
 {
     Lattice lattice;
     int origin;
@@ -1997,9 +1999,11 @@ static void count_diamond_endpoint_x_pair(int steps,
 
     if (target_x == NULL || answer == NULL)
         die("internal null endpoint-count argument");
-    if (target_x[0] == target_x[1])
+    if (target_count == 0U || target_count > 2U)
+        die("internal endpoint target count must be one or two");
+    if (target_count == 2U && target_x[0] == target_x[1])
         die("endpoint targets must be distinct");
-    if (steps < 1 || steps > MAX_STEPS)
+    if (steps < 0 || steps > MAX_STEPS)
         die("internal endpoint-count step count out of range");
 
     first_half = (steps + 1) / 2;
@@ -2047,13 +2051,23 @@ static void count_diamond_endpoint_x_pair(int steps,
         thread_count = MAX_OMP_THREADS;
 #endif
     if (verbose) {
-        fprintf(stderr,
-                "endpoint-x steps=%d split=%d+%d targets=%d,%d sites=%d "
-                "midpoint_orbits=%d template_sets=%zu template_sites=%zu "
-                "threads=%d engine=word\n",
-                steps, first_half, second_half, target_x[0], target_x[1],
-                lattice.nsite, midpoint_count, template_bag.count,
-                template_site_count, thread_count);
+        if (target_count == 1U) {
+            fprintf(stderr,
+                    "endpoint-x steps=%d split=%d+%d target=%d sites=%d "
+                    "midpoint_orbits=%d template_sets=%zu "
+                    "template_sites=%zu threads=%d engine=word\n",
+                    steps, first_half, second_half, target_x[0],
+                    lattice.nsite, midpoint_count, template_bag.count,
+                    template_site_count, thread_count);
+        } else {
+            fprintf(stderr,
+                    "endpoint-x steps=%d split=%d+%d targets=%d,%d "
+                    "sites=%d midpoint_orbits=%d template_sets=%zu "
+                    "template_sites=%zu threads=%d engine=word\n",
+                    steps, first_half, second_half, target_x[0],
+                    target_x[1], lattice.nsite, midpoint_count,
+                    template_bag.count, template_site_count, thread_count);
+        }
     }
 
 #ifdef _OPENMP
@@ -2066,20 +2080,21 @@ static void count_diamond_endpoint_x_pair(int steps,
             lattice.x[midpoint], lattice.y[midpoint], lattice.z[midpoint]);
         int transport_sign;
         SiteId *transport_map;
-        i128 contribution[2];
+        i128 contribution[2] = {0, 0};
 
         if (kind == NOT_A_DIAMOND_VERTEX)
             die("internal endpoint midpoint is not on the diamond lattice");
         transport_sign = kind == A_SUBLATTICE ? 1 : -1;
         transport_map = build_transport_map(
             &lattice, midpoint, template_sites, template_site_count);
-        count_disjoint_pairs_word_endpoints(
+        count_disjoint_pairs_word_endpoint_targets(
             &midpoint_bags[midpoint], &template_bag, lattice.nsite,
             transport_map, lattice.x[midpoint], transport_sign,
-            target_x, contribution);
+            target_x, target_count, contribution);
         free(transport_map);
         total0 += (i128)orbit_size[midpoint] * contribution[0];
-        total1 += (i128)orbit_size[midpoint] * contribution[1];
+        if (target_count == 2U)
+            total1 += (i128)orbit_size[midpoint] * contribution[1];
     }
 
     for (site = 0; site < lattice.nsite; ++site)
@@ -2093,10 +2108,30 @@ static void count_diamond_endpoint_x_pair(int steps,
     lattice_free(&lattice);
 
     if (total0 < 0 || (u128)total0 > (u128)UINT64_MAX
-        || total1 < 0 || (u128)total1 > (u128)UINT64_MAX)
+        || (target_count == 2U
+            && (total1 < 0 || (u128)total1 > (u128)UINT64_MAX)))
         die("endpoint-x count is outside uint64_t range");
     answer[0] = total0;
-    answer[1] = total1;
+    if (target_count == 2U)
+        answer[1] = total1;
+}
+
+static void count_diamond_endpoint_x_pair(int steps,
+                                          const int target_x[2],
+                                          int verbose, i128 answer[2])
+{
+    count_diamond_endpoint_x_targets(
+        steps, target_x, 2U, verbose, answer);
+}
+
+static i128 count_diamond_endpoint_x_single(int steps, int target_x,
+                                            int verbose)
+{
+    i128 answer;
+
+    count_diamond_endpoint_x_targets(
+        steps, &target_x, 1U, verbose, &answer);
+    return answer;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2380,6 +2415,17 @@ static int selftest(size_t cutoff, Engine engine)
                     failed = 1;
             }
         }
+        {
+            i128 single =
+                count_diamond_endpoint_x_single(10, 0, 0);
+            int ok = single == (i128)KNOWN_A001396[5];
+
+            printf("    single-target A001396(5) ");
+            print_i128(single);
+            printf("  %s\n", ok ? "ok" : "MISMATCH");
+            if (!ok)
+                failed = 1;
+        }
     }
     printf("%s\n", failed ? "SELFTEST FAILED" : "selftest passed");
     return failed;
@@ -2388,6 +2434,21 @@ static int selftest(size_t cutoff, Engine engine)
 /* ------------------------------------------------------------------------- */
 /* Command line                                                              */
 /* ------------------------------------------------------------------------- */
+
+typedef struct {
+    const char *name;
+    int step_addend;
+    int target_x;
+    int minimum_index;
+    int maximum_index;
+} EndpointRequest;
+
+static const EndpointRequest ENDPOINT_REQUESTS[] = {
+    {"A001395", 1, 1, 0, (MAX_STEPS - 1) / 2},
+    {"A001396", 0, 0, 0, MAX_STEPS / 2},
+    {"A001397", 0, 2, 1, MAX_STEPS / 2},
+    {"A001398", 1, 3, 1, (MAX_STEPS - 1) / 2}
+};
 
 static int parse_steps(const char *text)
 {
@@ -2409,7 +2470,6 @@ static int parse_endpoint_index(const char *text)
 {
     char *end = NULL;
     long value;
-    const int maximum = (MAX_STEPS - 1) / 2;
 
     if (text == NULL || *text == '\0')
         die("missing endpoint sequence index");
@@ -2417,13 +2477,28 @@ static int parse_endpoint_index(const char *text)
     value = strtol(text, &end, 10);
     if (errno == ERANGE || end == text || *end != '\0')
         die("endpoint sequence index must be an integer");
-    /*
-     * A001397 and A001398 have offset 1, so a common index for all four
-     * sequences begins at 1.  The longest requested walk has 2*N+1 steps.
-     */
-    if (value < 1 || value > maximum)
-        die("endpoint sequence index must be an integer from 1 to 19");
+    if (value < 0 || value > MAX_STEPS / 2)
+        die("endpoint sequence index must be an integer from 0 to 20");
     return (int)value;
+}
+
+static const EndpointRequest *parse_endpoint_request(const char *text)
+{
+    size_t index;
+
+    if (text == NULL || *text == '\0')
+        die("missing endpoint sequence number");
+    for (index = 0U;
+         index < sizeof ENDPOINT_REQUESTS / sizeof ENDPOINT_REQUESTS[0];
+         ++index) {
+        const EndpointRequest *request = &ENDPOINT_REQUESTS[index];
+
+        if (strcmp(text, request->name) == 0
+            || strcmp(text, request->name + 1) == 0)
+            return request;
+    }
+    die("endpoint sequence must be 001395, 001396, 001397, or 001398");
+    return NULL;
 }
 
 static size_t parse_cutoff(const char *text)
@@ -2462,7 +2537,8 @@ static void print_term(int steps, size_t cutoff, Engine engine)
     fflush(stdout);
 }
 
-static void print_endpoint_terms(int sequence_index)
+static void print_endpoint_terms(int sequence_index,
+                                 const EndpointRequest *request)
 {
     static const int odd_targets[2] = {1, 3};
     static const int even_targets[2] = {0, 2};
@@ -2470,6 +2546,29 @@ static void print_endpoint_terms(int sequence_index)
     i128 odd[2];
     i128 even[2];
 
+    if (request != NULL) {
+        int steps;
+        i128 value;
+
+        if (sequence_index < request->minimum_index
+            || sequence_index > request->maximum_index)
+            die("index is outside the supported range for that sequence");
+        steps = 2 * sequence_index + request->step_addend;
+        value = count_diamond_endpoint_x_single(
+            steps, request->target_x, verbose);
+        printf("%s(%d) ", request->name, sequence_index);
+        print_i128(value);
+        putchar('\n');
+        fflush(stdout);
+        return;
+    }
+    /*
+     * A001397 and A001398 have offset 1, and the odd-length requests must
+     * remain within MAX_STEPS.  Hence 1..19 is the common four-series range.
+     */
+    if (sequence_index < 1
+        || sequence_index > (MAX_STEPS - 1) / 2)
+        die("--endpoints without a sequence requires an index from 1 to 19");
     count_diamond_endpoint_x_pair(
         2 * sequence_index + 1, odd_targets, verbose, odd);
     count_diamond_endpoint_x_pair(
@@ -2492,9 +2591,12 @@ static void usage(const char *program)
     fprintf(stderr,
             "usage: %s [--engine word|bag] [--cutoff K] n\n"
             "       %s [--engine word|bag] [--cutoff K] --upto N\n"
-            "       %s [--engine word] --endpoints N\n"
+            "       %s [--engine word] --endpoints N "
+            "[001395|001396|001397|001398]\n"
             "       %s [--engine word|bag] [--cutoff K] --selftest\n"
-            "where 0 <= n,N <= 40, and 1 <= endpoint N <= 19\n",
+            "four-series range: 1 <= endpoint N <= 19\n"
+            "single-series ranges: A001395 0..19, A001396 0..20,\n"
+            "                      A001397 1..20, A001398 1..19\n",
             program, program, program, program);
 }
 
@@ -2541,15 +2643,18 @@ int main(int argc, char **argv)
     }
     if (argument < argc && strcmp(argv[argument], "--endpoints") == 0) {
         int sequence_index;
+        const EndpointRequest *request = NULL;
 
-        if (argument + 2 != argc) {
+        if (argument + 2 != argc && argument + 3 != argc) {
             usage(argv[0]);
             return EXIT_FAILURE;
         }
         if (engine != ENGINE_WORD)
             die("--endpoints requires --engine word");
         sequence_index = parse_endpoint_index(argv[argument + 1]);
-        print_endpoint_terms(sequence_index);
+        if (argument + 3 == argc)
+            request = parse_endpoint_request(argv[argument + 2]);
+        print_endpoint_terms(sequence_index, request);
         return EXIT_SUCCESS;
     }
     if (argument + 1 == argc) {
