@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# A098482 is the case s = 3 of the general family below.
+# A098479 is the case s = 2 of the general family below.
 #
 # Count lattice paths from (0, 0) to (n, n) using the three steps
 #
