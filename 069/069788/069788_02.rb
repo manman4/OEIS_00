@@ -16,8 +16,8 @@
 #      exact sparse elimination with fill-reducing pivot selection.
 #
 # Usage:
-#   ruby 069788_02.rb       # n = 1..6
-#   ruby 069788_02.rb 8     # n = 1..8
+#   ruby 069788_02.rb       # n = 0..6
+#   ruby 069788_02.rb 8     # n = 0..8
 
 Triangle = Struct.new(:up, :i, :j, :x3, :y3, keyword_init: true)
 
@@ -295,7 +295,9 @@ def sparse_determinant_abs(input_rows, column_count)
 end
 
 def a069788_by_matchings(n)
-  raise ArgumentError, "n must be positive" unless n.positive?
+  unless n.is_a?(Integer) && n >= 0
+    raise ArgumentError, "n must be a nonnegative integer"
+  end
 
   triangles, up, down, adjacency, edges, edge_ids, id_by_triangle = build_graph(n)
   faces = bounded_faces(triangles, adjacency, edge_ids)
@@ -320,9 +322,9 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   limit = (ARGV[0] || 6).to_i
-  raise ArgumentError, "limit must be positive" unless limit.positive?
+  raise ArgumentError, "limit must be nonnegative" if limit.negative?
 
-  1.upto(limit){|n|
+  0.upto(limit){|n|
     i = a069788_by_matchings(n)
     break if i.to_s.size > 1000
     puts "#{n} #{i}"

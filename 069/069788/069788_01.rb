@@ -10,8 +10,8 @@
 # with Defects" (1999).
 #
 # Usage:
-#   ruby 069788_01.rb       # n = 1..12
-#   ruby 069788_01.rb 20    # n = 1..20
+#   ruby 069788_01.rb       # n = 0..12
+#   ruby 069788_01.rb 20    # n = 0..20
 
 def exact_quotient(numerator, denominator)
   quotient, remainder = numerator.divmod(denominator)
@@ -21,7 +21,9 @@ def exact_quotient(numerator, denominator)
 end
 
 def a069788(n)
-  raise ArgumentError, "n must be a positive integer" unless n.is_a?(Integer) && n.positive?
+  unless n.is_a?(Integer) && n >= 0
+    raise ArgumentError, "n must be a nonnegative integer"
+  end
 
   numerator = 1
   denominator = 1
@@ -71,9 +73,9 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   limit = (ARGV[0] || 12).to_i
-  raise ArgumentError, "limit must be positive" unless limit.positive?
+  raise ArgumentError, "limit must be nonnegative" if limit.negative?
 
-  1.upto(limit){|n|
+  0.upto(limit){|n|
     i = a069788(n)
     break if i.to_s.size > 1000
     puts "#{n} #{i}"
