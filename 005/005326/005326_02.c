@@ -37,7 +37,8 @@
  *
  * Without OpenMP, omit the OpenMP flags and -lomp.
  *
- * The normal output is b005326_1.txt beside the executable.  During a run,
+ * The sequence offset is 1, so the normal output starts with "1 1" in
+ * b005326_1.txt beside the executable.  During a run,
  * b005326_1_part.txt is flushed after every completed term and remains
  * readable.  It is atomically renamed only after complete success.
  */
@@ -78,6 +79,7 @@
 
 #define DEFAULT_MAX_N 25
 #define MAX_SUPPORTED_N 74
+#define SEQUENCE_OFFSET 1
 #define KNOWN_MAX_N 60
 #define DEFAULT_CHECK_N 25
 #define DEFAULT_MEMORY_MIB UINT64_C(2048)
@@ -188,10 +190,11 @@ static int parse_n(const char *text, const char *label)
     char *end = NULL;
     errno = 0;
     long value = strtol(text, &end, 10);
-    if (errno != 0 || end == text || *end != '\0' || value < 0 ||
+    if (errno != 0 || end == text || *end != '\0' ||
+        value < SEQUENCE_OFFSET ||
         value > MAX_SUPPORTED_N) {
-        fprintf(stderr, "error: %s must be in 0..%d: %s\n",
-                label, MAX_SUPPORTED_N, text);
+        fprintf(stderr, "error: %s must be in %d..%d: %s\n",
+                label, SEQUENCE_OFFSET, MAX_SUPPORTED_N, text);
         exit(EXIT_FAILURE);
     }
     return (int)value;
@@ -866,12 +869,12 @@ static int check_known_terms(int max_n, uint64_t memory_budget)
     }
     mpz_t value;
     mpz_init(value);
-    for (int n = 0; n <= max_n; ++n) {
+    for (int n = SEQUENCE_OFFSET; n <= max_n; ++n) {
         compute_checked(value, n, memory_budget, false);
     }
     mpz_clear(value);
-    printf("ok: parity/rook/CRT agrees with A005326 for n=0..%d\n",
-           max_n);
+    printf("ok: parity/rook/CRT agrees with A005326 for n=%d..%d\n",
+           SEQUENCE_OFFSET, max_n);
     return EXIT_SUCCESS;
 }
 
@@ -888,10 +891,11 @@ static void write_known(FILE *stream, int n)
 static void produce_b_file(const char *argv0, int max_n, int start_n,
                            uint64_t memory_budget)
 {
-    if (start_n > max_n + 1 || start_n > KNOWN_MAX_N + 1) {
+    if (start_n < SEQUENCE_OFFSET || start_n > max_n + 1 ||
+        start_n > KNOWN_MAX_N + 1) {
         fprintf(stderr,
-                "error: START_N must be at most min(MAX_N+1,%d)\n",
-                KNOWN_MAX_N + 1);
+                "error: START_N must be in %d..min(MAX_N+1,%d)\n",
+                SEQUENCE_OFFSET, KNOWN_MAX_N + 1);
         exit(EXIT_FAILURE);
     }
 
@@ -907,7 +911,7 @@ static void produce_b_file(const char *argv0, int max_n, int start_n,
         exit(EXIT_FAILURE);
     }
 
-    for (int n = 0; n < start_n && n <= max_n; ++n) {
+    for (int n = SEQUENCE_OFFSET; n < start_n && n <= max_n; ++n) {
         write_known(stream, n);
     }
     if (fflush(stream) != 0) {
@@ -916,10 +920,10 @@ static void produce_b_file(const char *argv0, int max_n, int start_n,
         free(path);
         die("could not flush the built-in A005326 prefix");
     }
-    if (start_n > 0) {
+    if (start_n > SEQUENCE_OFFSET) {
         fprintf(stderr,
-                "005326_02: using built-in verified prefix n=0..%d\n",
-                start_n - 1);
+                "005326_02: using built-in verified prefix n=%d..%d\n",
+                SEQUENCE_OFFSET, start_n - 1);
     }
 
     mpz_t value;
@@ -949,7 +953,7 @@ static void produce_b_file(const char *argv0, int max_n, int start_n,
         free(path);
         exit(EXIT_FAILURE);
     }
-    printf("wrote %s (n=0..%d)\n", path, max_n);
+    printf("wrote %s (n=%d..%d)\n", path, SEQUENCE_OFFSET, max_n);
     free(part);
     free(path);
 }
@@ -962,11 +966,11 @@ static void usage(const char *program)
             "       %s --check [MAX_N]\n"
             "\n"
             "MAX_N defaults to %d and may be at most %d.\n"
-            "START_N defaults to 0; the built-in prefix ends at n=%d.\n"
+            "START_N defaults to %d; the built-in prefix ends at n=%d.\n"
             "The default memory limit is %" PRIu64 " MiB; override it with\n"
             "A005326_02_MEMORY_MIB.\n",
             program, program, program, DEFAULT_MAX_N, MAX_SUPPORTED_N,
-            KNOWN_MAX_N, DEFAULT_MEMORY_MIB);
+            SEQUENCE_OFFSET, KNOWN_MAX_N, DEFAULT_MEMORY_MIB);
 }
 
 int main(int argc, char **argv)
@@ -1005,7 +1009,9 @@ int main(int argc, char **argv)
     int max_n = argc >= 2
                     ? parse_n(argv[1], "MAX_N")
                     : DEFAULT_MAX_N;
-    int start_n = argc == 3 ? parse_n(argv[2], "START_N") : 0;
+    int start_n = argc == 3
+                      ? parse_n(argv[2], "START_N")
+                      : SEQUENCE_OFFSET;
     produce_b_file(argv[0], max_n, start_n, memory_budget);
     return EXIT_SUCCESS;
 }
