@@ -191,8 +191,9 @@ static bool add_u128(U128 *destination, U128 addend)
 
 static void store_bfile_term(int n, U128 value)
 {
-    U128 values[MAX_N + 1];
-    int count = 0;
+    U128 values[MAX_N + 1] = {0};
+    bool present[MAX_N + 1] = {false};
+    int previous = -1;
     mode_t output_mode = 0644;
     struct stat metadata;
     if (stat(output_path, &metadata) == 0) {
@@ -211,29 +212,28 @@ static void store_bfile_term(int n, U128 value)
             int index;
             char number[64];
             char extra;
-            if (count > MAX_N ||
-                sscanf(line, "%d %63s %c", &index, number, &extra) != 2 ||
-                index != count || !parse_u128(number, &values[count])) {
+            if (sscanf(line, "%d %63s %c", &index, number, &extra) != 2 ||
+                index < 0 || index > MAX_N || index <= previous ||
+                !parse_u128(number, &values[index])) {
                 fclose(input);
-                die("existing b-file is malformed or nonconsecutive");
+                die("existing b-file is malformed or not strictly ordered");
             }
-            ++count;
+            present[index] = true;
+            previous = index;
         }
         if (ferror(input) || fclose(input) != 0) {
             die("cannot read existing b-file");
         }
     }
 
-    if (n < count) {
+    if (present[n]) {
         if (values[n] != value) {
             die("computed term disagrees with existing b-file");
         }
         return;
     }
-    if (n != count) {
-        die("b-file has a gap; compute the missing earlier terms first");
-    }
-    values[count++] = value;
+    values[n] = value;
+    present[n] = true;
 
     const char suffix[] = ".tmp.XXXXXX";
     const size_t path_length = strlen(output_path);
@@ -265,7 +265,10 @@ static void store_bfile_term(int n, U128 value)
         die("cannot open temporary b-file stream");
     }
     bool failed = false;
-    for (int index = 0; index < count; ++index) {
+    for (int index = 0; index <= MAX_N; ++index) {
+        if (!present[index]) {
+            continue;
+        }
         if (fprintf(output, "%d ", index) < 0 ||
             print_u128(output, values[index]) != 0 ||
             fputc('\n', output) == EOF) {
@@ -293,7 +296,8 @@ static void store_bfile_term(int n, U128 value)
         die("cannot atomically replace b-file");
     }
     free(temporary);
-    fprintf(stderr, "060963_02: updated %s through n=%d\n", output_path, n);
+    fprintf(stderr, "060963_02: recorded computed term n=%d in %s\n",
+            n, output_path);
 }
 
 static uint64_t reverse_bits(uint64_t value, unsigned width)
