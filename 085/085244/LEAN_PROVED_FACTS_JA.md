@@ -45,22 +45,22 @@ Lean内で強く、無条件に証明されている中心的結果は次のと�
 
 `Paper1.p_values` は次を計算証明する。
 
-\[
+$$
 p(0),p(1),p(2),p(3),p(4),p(5),p(6),p(7),p(9),p(10),p(11)
 =1,1,2,3,5,7,11,15,30,42,56.
-\]
+$$
 
 これから、以下が証明されている。
 
-- `Paper1.prop_i`: \(p(5)\equiv2\pmod5\)
-- `Paper1.prop_ii`: \(p(7)\equiv1\pmod7\)
-- `Paper1.prop_iii`: \(p(11)\equiv1\pmod{11}\)
-- `Paper1.four_mem`: \(4\in S_1\)
-- `Paper1.seven_mem`: \(7\in S_1\)
-- `Paper1.eleven_mem`: \(11\in S_1\)
-- `Paper1.five_not_mem`: \(5\notin S_1\)
+- `Paper1.prop_i`: $p(5)\equiv2\pmod5$
+- `Paper1.prop_ii`: $p(7)\equiv1\pmod7$
+- `Paper1.prop_iii`: $p(11)\equiv1\pmod{11}$
+- `Paper1.four_mem`: $4\in S_1$
+- `Paper1.seven_mem`: $7\in S_1$
+- `Paper1.eleven_mem`: $11\in S_1$
+- `Paper1.five_not_mem`: $5\notin S_1$
 
-ここで \(S_1=\{n\ge2:n\mid p(n)-1\}\) である。`Paper1.companion_small` は \(2\mid p(2)\)、\(3\mid p(3)\)、\(p(6)\equiv-1\pmod6\) も証明する。
+ここで $S_1=\{n\ge2:n\mid p(n)-1\}$ である。`Paper1.companion_small` は $2\mid p(2)$、$3\mid p(3)$、$p(6)\equiv-1\pmod6$ も証明する。
 
 `Paper1.proposition_of` などの `_of` 定理は、小さい分割数の値を仮定すれば、以後の合同式は通常のkernel証明だけで従うことを分離して示している。
 
@@ -92,23 +92,23 @@ p(0),p(1),p(2),p(3),p(4),p(5),p(6),p(7),p(9),p(10),p(11)
 `cT`、`cU` はChebyshev型漸化式、`cG` は期待多項式の候補となる閉形式として定義されている。
 
 - `Paper2.cG_newton` は全ての `r` についてNewton型漸化式
-  \[
+  $$
   rG_r=\sum_{k=1}^r f_kG_{r-k}
-  \]
+  $$
   を証明する。
 - `Paper2.thm1_of_newton` は、標数0の整域上で初期値と同じNewton漸化式を満たす列が `cG` に一致することを証明する。
 - `Paper2.cf_comp` はChebyshevの合成則から、サイクル因子を `2T_{nk}(t)-2` に書き換える。
 - `Paper2.thm1_general`、`thm1_closed_form`、`thm1_factored` は、明示されたNewton漸化式を満たす任意の列 `Φ` に対し、
-  \[
+  $$
   \Phi_r=cG(T_n(t),r),\qquad
   \Phi_{k+1}=(2T_n(t)-2)U_k(T_n(t))
-  \]
+  $$
   という閉形式・因数分解を証明する。
 - `Paper2.thm1_Sr` は仮定としてNewton漸化式を受け取らず、有限置換のサイクル型に基づく `permAvg` を直接定義し、その平均が `cG(T_n(t),r)` に等しいことを全ての `n,r` で証明する。
 - `Paper2.quotient_parity` は `U_k(T_n(t))` の偶奇性
-  \[
+  $$
   U_k(T_n(-t))=(-1)^{nk}U_k(T_n(t))
-  \]
+  $$
   を証明する。
 
 したがって、「置換の各サイクル長 `k` に重み `2T_{nk}(t)-2` を与えた平均」の閉形式はLean内で完結している。
@@ -116,26 +116,26 @@ p(0),p(1),p(2),p(3),p(4),p(5),p(6),p(7),p(9),p(10),p(11)
 ### 4.2 零点・生成関数・特殊値
 
 - `Paper2Roots.Phi_ne_zero_of_two_lt_abs`: 線形順序体で `n,r ≥ 1`、`|x|>2` なら
-  \[
+  $$
   cG(T_n(x/2),r)\ne0.
-  \]
+  $$
   よって、この代数的閉形式の実零点は `[-2,2]` の外にはない。
 - `Paper2GenFun.genU_mul`:
-  \[
+  $$
   (1-2YX+X^2)\sum_{d\ge0}U_d(Y)X^d=1.
-  \]
+  $$
 - `Paper2GenFun.genPhi_mul`:
-  \[
+  $$
   (1-2YX+X^2)\sum_{r\ge0}cG(Y,r)X^r=(1-X)^2.
-  \]
+  $$
 - `Paper2FibLucas.cor2_phi3_general`: `r ≥ 1` で
-  \[
+  $$
   F_{2n}\,\Phi_3(n,r)=(L_{2n}-2)F_{2nr}.
-  \]
+  $$
 - `Paper2SpectralEdge.spectral_edge_is_root`: `n>0, r≥2` で
-  \[
+  $$
   U_{r-1}\!\left(T_n\!\left(\cos\frac{\pi}{nr}\right)\right)=0.
-  \]
+  $$
 
 最後の定理は「この値が零点である」ことだけを証明する。最大零点であること、およびgapの漸近式は定理の型に含まれない。また `Phi_ne_zero_of_two_lt_abs` は実数上の区間排除であり、複素零点を含めた「全零点が実数である」という定理ではない。
 
@@ -170,19 +170,21 @@ p(0),p(1),p(2),p(3),p(4),p(5),p(6),p(7),p(9),p(10),p(11)
 
 - `Paper3.three_dvd_gcd_permanent`: `n ≥ 13` ならGCD行列の永久行列式は `ZMod 3` 上で0。これは整数永久行列式の `3` による合同を表す。
 - `Paper3Four.four_dvd_permanent`: `n ≥ 4` なら
-  \[
-  4\mid\operatorname{per}(\gcd(i,j))_{1\le i,j\le n}.
-  \]
+  $$
+  4\mid\operatorname{per}\!\left(
+    \left[\gcd(i,j)\right]_{1\le i,j\le n}
+  \right).
+  $$
 - `Paper3Four.eight_dvd_permanent`: `n ≥ 17` なら同じ永久行列式は `8` で割り切れる。
 - `Paper3Linear.two_pow_dvd_permanent`: 全ての `n` について
-  \[
+  $$
   2^{\lfloor(n+1)/2\rfloor-\lfloor\log_2n\rfloor-1}\mid a(n),
-  \]
+  $$
   ただし指数の減算は自然数の切り捨て減算である。
 - `Paper3C1.two_pow_dvd_permanent_c1`: 全ての `n` について、さらに強く
-  \[
+  $$
   2^{n-2\lfloor\log_2n\rfloor-2}\mid a(n).
-  \]
+  $$
 
 最後の定理は2進付値が率1の線形下界を持つことを与える。ただし、ソース中に `Tendsto` を使った `v₂(a(n))/n → 1` という別の極限定理はない。Leanで直接証明された最終statementは上の整除式である。
 
@@ -192,22 +194,27 @@ p(0),p(1),p(2),p(3),p(4),p(5),p(6),p(7),p(9),p(10),p(11)
 - `Paper3.permanent_eq_zero_of_two_cols_eq`: `ZMod 2` 上で2列が等しければ永久行列式は0。
 - `factorial_dvd_permanent_of_ones_rows`: `c` 本の全1行を持つ整数行列の永久行列式は `c!` で割り切れる。
 - `OddPerm.two_pow_dvd_permanent_odd`: 全成分が奇数の `n×n` 整数行列では
-  \[
+  $$
   2^{n-\lfloor\log_2 n\rfloor-1}\mid\operatorname{per}M.
-  \]
+  $$
 - `TwoGroupFactorial`、`ZeroedCorner`、`OddEngine`、`GeneralEngine`、`OrbitSumDivisibility` は、上の整除性を支える群作用・同一行群・zeroed corner・orbit sumの一般補題を証明する。
 
 ### 5.3 Smithの行列式公式
 
-- `Smith.det_gcdDivSum`: 可換環上で
-  \[
-  \det\left[\sum_{d\mid\gcd(i,j)}f(d)\right]_{1\le i,j\le n}
-  =\prod_{k=1}^nf(k).
-  \]
-- `Smith.det_gcd_eq_prod_totient`:
-  \[
-  \det[\gcd(i,j)]_{1\le i,j\le n}=\prod_{k=1}^n\varphi(k).
-  \]
+- `Smith.det_gcdDivSum`: 任意の $n\in\mathbb{N}$、可換環 $R$、関数 $f:\mathbb{N}\to R$ に対して
+  $$
+  \det\!\left(
+    \left[\sum_{d\mid\gcd(i,j)} f(d)\right]_{1\le i,j\le n}
+  \right)
+  =\prod_{k=1}^{n} f(k).
+  $$
+- `Smith.det_gcd_eq_prod_totient`: 任意の $n\in\mathbb{N}$ に対し、整数行列として
+  $$
+  \det\!\left(
+    \left[\gcd(i,j)\right]_{1\le i,j\le n}
+  \right)
+  =\prod_{k=1}^{n}\varphi(k).
+  $$
 
 これらは明示的な外部数学仮定なしに証明されている。
 
@@ -230,9 +237,9 @@ p(0),p(1),p(2),p(3),p(4),p(5),p(6),p(7),p(9),p(10),p(11)
 - `Paper4Coeff.L_coeff_top`、`L_coeff_next`: falling-factorial型多項式の上位2係数。
 - `Paper4Coeff.binom_two_div_factorial`: 二項係数と階乗の有理数恒等式。
 - `Paper4Coeff.top_two_coeff`: Paper 4で必要となる二つの寄与を
-  \[
+  $$
   -\frac{E^{k-2}}{(k-2)!}\left(\frac E2+P\right)
-  \]
+  $$
   にまとめる代数恒等式。
 - `ConflictIE.mCount_eq_ie`: conflict-freeな `k` 部分集合数に対する厳密な包含排除公式。
 - `CoverCounts.edge_count`: 各fiberの大きさが `d` で次数が保存されるなら、被覆側の辺数は `E d`。
