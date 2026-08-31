@@ -134,7 +134,7 @@ $$
   $$
 - `Paper2SpectralEdge.spectral_edge_is_root`: `n>0, r≥2` で
   $$
-  U_{r-1}\!\left(T_n\!\left(\cos\frac{\pi}{nr}\right)\right)=0.
+  U_{r-1}\left(T_n\left(\cos\frac{\pi}{nr}\right)\right)=0.
   $$
 
 最後の定理は「この値が零点である」ことだけを証明する。最大零点であること、およびgapの漸近式は定理の型に含まれない。また `Phi_ne_zero_of_two_lt_abs` は実数上の区間排除であり、複素零点を含めた「全零点が実数である」という定理ではない。
@@ -171,7 +171,7 @@ $$
 - `Paper3.three_dvd_gcd_permanent`: `n ≥ 13` ならGCD行列の永久行列式は `ZMod 3` 上で0。これは整数永久行列式の `3` による合同を表す。
 - `Paper3Four.four_dvd_permanent`: `n ≥ 4` なら
   $$
-  4\mid\operatorname{per}\!\left(
+  4\mid\operatorname{per}\left(
     \left[\gcd(i,j)\right]_{1\le i,j\le n}
   \right).
   $$
@@ -203,14 +203,14 @@ $$
 
 - `Smith.det_gcdDivSum`: 任意の $n\in\mathbb{N}$、可換環 $R$、関数 $f:\mathbb{N}\to R$ に対して
   $$
-  \det\!\left(
+  \det\left(
     \left[\sum_{d\mid\gcd(i,j)} f(d)\right]_{1\le i,j\le n}
   \right)
   =\prod_{k=1}^{n} f(k).
   $$
 - `Smith.det_gcd_eq_prod_totient`: 任意の $n\in\mathbb{N}$ に対し、整数行列として
   $$
-  \det\!\left(
+  \det\left(
     \left[\gcd(i,j)\right]_{1\le i,j\le n}
   \right)
   =\prod_{k=1}^{n}\varphi(k).
