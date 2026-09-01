@@ -25,13 +25,13 @@
 # obtains [y^k] from [y^k]q^h = (-1)^k*binomial(h,k).
 #
 # Usage:
-#   ruby 001282_01.rb                 # k=5, b-file lines n=10..30
-#   ruby 001282_01.rb 100             # k=5, b-file lines n=10..100
-#   ruby 001282_01.rb --runs 4 100    # k=4, b-file lines n=8..100
-#   ruby 001282_01.rb --check
+#   ruby 000544_01.rb                 # k=5, b-file lines n=10..30
+#   ruby 000544_01.rb 100             # k=5, b-file lines n=10..100
+#   ruby 000544_01.rb --runs 4 100    # k=4, b-file lines n=8..100
+#   ruby 000544_01.rb --check
 
-module A001282
-  DEFAULT_RUNS = 3
+module A000544
+  DEFAULT_RUNS = 2
   DEFAULT_MAX_N = 30
   MAX_SUPPORTED_N = 1_000
   MAX_DIGITS = 1_000
@@ -232,8 +232,8 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   begin
-    A001282.run(ARGV, $PROGRAM_NAME)
-  rescue A001282::InputError, A001282::CalculationError => error
+    A000544.run(ARGV, $PROGRAM_NAME)
+  rescue A000544::InputError, A000544::CalculationError => error
     warn "error: #{error.message}"
     exit 1
   end
