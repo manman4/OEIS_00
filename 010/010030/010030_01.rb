@@ -41,7 +41,7 @@
 
 module A010030
   DEFAULT_MAX_N = 10
-  MAX_SUPPORTED_N = 100
+  MAX_SUPPORTED_N = 200
 
   KNOWN_ROWS = [
     [1],
@@ -257,12 +257,21 @@ module A010030
       end
 
     triangle = rows(maximum_n)
+    cnt = 1
     if mode == :rows
       triangle.each_with_index do |values, index|
         puts "n=#{index + 1}: #{values.join(', ')}"
       end
     else
-      puts triangle.flatten.join(', ')
+      triangle.each{|row|
+        row.each{|i|
+          break if i.to_s.size > 1000
+          print cnt
+          print ' '
+          puts i
+          cnt += 1
+        }
+      }
     end
   end
 end
