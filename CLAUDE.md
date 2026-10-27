@@ -9,6 +9,24 @@
 - Preserve unrelated user files and changes. Do not reorganize legacy files
   merely to make them match newer conventions.
 
+## Public repository privacy
+
+- Treat tracked files, commit messages, pull requests, and generated artifacts
+  intended for publication as public. Reading local information does not
+  authorize publishing it.
+- Do not add personal home paths, private contact or account details,
+  credentials, private research plans, raw local logs, or session metadata to
+  source code, tests, documentation, or result files. Use repository-relative
+  paths and generic examples; derive runtime paths from the script location.
+- Keep local backups, environment details, and diagnostic records outside the
+  public repository when they are needed. Include only mathematical data and
+  necessary non-sensitive computation metadata in published results.
+- Before committing or publishing, inspect the intended changes for accidental
+  personal information and secrets without printing their values. An ignore
+  rule does not protect a file that is already tracked.
+- Preserve required licenses and legitimate public author attribution. Do not
+  remove attribution or unrelated files as a privacy cleanup.
+
 ## Licensing and provenance
 
 - Before adding or modifying source code, identify whether it was written
